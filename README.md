@@ -6,6 +6,12 @@ JavaScript scrolling date picker — single / range / multi select, optional tim
 **GitHub:** https://github.com/Abramov-Front-end/rolldate-core  
 **MCP** (Cursor & other AI IDEs): [`@rolldate/mcp`](https://www.npmjs.com/package/@rolldate/mcp) · [repo](https://github.com/Abramov-Front-end/rolldate-mcp)
 
+<p align="center">
+  <img src="./assets/demo/rolldate-demo.gif" alt="RollDate scrolling date picker demo" width="720">
+</p>
+
+> Preview assets: [`rolldate-demo.webm`](./assets/demo/rolldate-demo.webm) · [`rolldate-demo.gif`](./assets/demo/rolldate-demo.gif)
+
 ## Why RollDate?
 
 - **Scroll-first UX** — wheel-style day/month/year and time columns; smooth on desktop and mobile
@@ -98,6 +104,8 @@ new RollDate('#date-input', {
 | `dist/js/rolldate.js` | Full script |
 | `dist/css/rolldate.min.css` | Minified styles |
 | `dist/css/rolldate.css` | Full styles |
+| `assets/demo/rolldate-demo.webm` | Preview video (WebM) |
+| `assets/demo/rolldate-demo.gif` | Preview animation (GIF) |
 
 ## Support
 

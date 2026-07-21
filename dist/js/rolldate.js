@@ -530,18 +530,21 @@ var RollDate = (function () {
                 // Resolve selection class for current date cell.
                 let selectionClass = '';
                 if (selectType === 'single' || selectType === 'multi') {
+                    const dayStamp = date.getTime();
                     const isSelected = selectedDates.some(
-                        d => d.getTime() === date.getTime()
+                        d => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() === dayStamp
                     );
                     if (isSelected) selectionClass = 'RollDate__calendar__day--selected';
                 } else if (selectType === 'range' && selectedDates.length === 2) {
                     const [start, end] = selectedDates;
                     const time = date.getTime();
-                    if (time === start.getTime()) {
+                    const startStamp = new Date(start.getFullYear(), start.getMonth(), start.getDate()).getTime();
+                    const endStamp = new Date(end.getFullYear(), end.getMonth(), end.getDate()).getTime();
+                    if (time === startStamp) {
                         selectionClass = 'RollDate__calendar__day--range-first';
-                    } else if (time === end.getTime()) {
+                    } else if (time === endStamp) {
                         selectionClass = 'RollDate__calendar__day--range-last';
-                    } else if (time > start.getTime() && time < end.getTime()) {
+                    } else if (time > startStamp && time < endStamp) {
                         selectionClass = 'RollDate__calendar__day--range-selected';
                     }
                 }
@@ -1222,6 +1225,12 @@ var RollDate = (function () {
             }
         }
 
+        #commitTime() {
+            this.#readColumns();
+            this.#updateDisplay();
+            this.onChange(this.getTime());
+        }
+
         #createColumn(unit, values, initial) {
             const field = this.root.querySelector(`[data-unit="${unit}"]`);
             const viewport = field.querySelector('.RollDate__time__viewport');
@@ -1250,6 +1259,7 @@ var RollDate = (function () {
                 if (column._lastIndex !== index) {
                     if (column._lastIndex !== undefined) {
                         hapticTick(this.hapticFeedback);
+                        this.#commitTime();
                     }
                     column._lastIndex = index;
                 }
@@ -1274,10 +1284,9 @@ var RollDate = (function () {
             column.snap = () => {
                 const index = column.indexFromOffset();
                 column.offset = -index * ITEM_HEIGHT;
+                column._lastIndex = index;
                 column.apply(true);
-                this.#readColumns();
-                this.#updateDisplay();
-                this.onChange(this.getTime());
+                this.#commitTime();
             };
 
             column.scrollToValue = (value, animate = true) => {
@@ -1291,9 +1300,6 @@ var RollDate = (function () {
                 const index = Math.min(values.length - 1, Math.max(0, column.indexFromOffset() + delta));
                 column.offset = -index * ITEM_HEIGHT;
                 column.apply(true);
-                this.#readColumns();
-                this.#updateDisplay();
-                this.onChange(this.getTime());
             };
 
             column.scrollToValue(initial, false);
@@ -1422,6 +1428,30 @@ var RollDate = (function () {
         }
 
         #normalizeDateInput(dateLike) {
+            if (dateLike instanceof Date && !Number.isNaN(dateLike.getTime())) {
+                return new Date(dateLike.getFullYear(), dateLike.getMonth(), dateLike.getDate())
+            }
+
+            if (typeof dateLike === 'string') {
+                const clean = dateLike.trim();
+                if (!clean) return null
+
+                const valueSep = clean.match(/[-/.]/)?.[0];
+                const formatSep = this.options.dateFormat.match(/[-/.]/)?.[0];
+                const format = valueSep && formatSep && valueSep !== formatSep
+                    ? 'auto'
+                    : this.options.dateFormat;
+
+                const date = parseDate(clean, format);
+                if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+                    const fallback = parseDate(clean, 'auto');
+                    if (!(fallback instanceof Date) || Number.isNaN(fallback.getTime())) return null
+                    return new Date(fallback.getFullYear(), fallback.getMonth(), fallback.getDate())
+                }
+
+                return new Date(date.getFullYear(), date.getMonth(), date.getDate())
+            }
+
             const date = checkDateFormat(dateLike, this.options.dateFormat);
             if (!(date instanceof Date) || Number.isNaN(date.getTime())) return null
             return new Date(date.getFullYear(), date.getMonth(), date.getDate())
@@ -1967,9 +1997,10 @@ var RollDate = (function () {
                     }
 
                     if (this.options.selectType === 'range') {
+                        const clickStamp = this.#toDateStamp(date);
                         const isClickInRange = this.#selectedDates.length === 2 &&
-                            date.getTime() >= this.#selectedDates[0].getTime() &&
-                            date.getTime() <= this.#selectedDates[1].getTime();
+                            clickStamp >= this.#toDateStamp(this.#selectedDates[0]) &&
+                            clickStamp <= this.#toDateStamp(this.#selectedDates[1]);
 
                         if (this.#selectedDates.length === 2 && !isClickInRange) {
                             this.#clearRangeSelection();
@@ -1980,7 +2011,8 @@ var RollDate = (function () {
                             $day.classList.add('RollDate__calendar__day--range-first');
                         } else {
                             const firstDate = this.#selectedDates[0];
-                            if (date.getTime() > firstDate.getTime()) {
+                            const firstStamp = this.#toDateStamp(firstDate);
+                            if (clickStamp > firstStamp) {
                                 this.#selectedDates = [firstDate, date];
 
                                 this.$container.querySelectorAll('[data-day]').forEach(dayEl => {
@@ -1989,17 +2021,17 @@ var RollDate = (function () {
                                         Number(dayEl.dataset.month),
                                         Number(dayEl.dataset.day)
                                     );
-                                    const time = dayDate.getTime();
+                                    const stamp = this.#toDateStamp(dayDate);
 
-                                    if (time === firstDate.getTime()) {
+                                    if (stamp === firstStamp) {
                                         dayEl.classList.add('RollDate__calendar__day--range-first');
-                                    } else if (time === date.getTime()) {
+                                    } else if (stamp === clickStamp) {
                                         dayEl.classList.add('RollDate__calendar__day--range-last');
-                                    } else if (time > firstDate.getTime() && time < date.getTime()) {
+                                    } else if (stamp > firstStamp && stamp < clickStamp) {
                                         dayEl.classList.add('RollDate__calendar__day--range-selected');
                                     }
                                 });
-                            } else if (date.getTime() < firstDate.getTime()) {
+                            } else if (clickStamp < firstStamp) {
                                 this.#selectedDates = [date];
                                 $day.classList.add('RollDate__calendar__day--range-first');
 
@@ -2017,12 +2049,13 @@ var RollDate = (function () {
                     }
 
                     if (this.options.selectType === 'multi') {
+                        const clickStamp = this.#toDateStamp(date);
                         const isSelected = this.#selectedDates.some(
-                            d => d.getTime() === date.getTime()
+                            d => this.#toDateStamp(d) === clickStamp
                         );
                         if (isSelected) {
                             this.#selectedDates = this.#selectedDates.filter(
-                                d => d.getTime() !== date.getTime()
+                                d => this.#toDateStamp(d) !== clickStamp
                             );
                             $day.classList.remove('RollDate__calendar__day--selected');
                         } else {
@@ -2378,7 +2411,8 @@ var RollDate = (function () {
             } else if (this.options.selectType === 'range') {
                 this.#selectedDates = [selected];
             } else if (this.options.selectType === 'multi') {
-                const exists = this.#selectedDates.some(d => d.getTime() === selected.getTime());
+                const selectedStamp = this.#toDateStamp(selected);
+                const exists = this.#selectedDates.some(d => this.#toDateStamp(d) === selectedStamp);
                 if (!exists) this.#selectedDates.push(selected);
             }
 
