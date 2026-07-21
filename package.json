@@ -1,0 +1,53 @@
+{
+  "name": "@rolldate/core",
+  "publishConfig": {
+    "access": "public"
+  },
+  "version": "1.0.5",
+  "description": "RollDate — JavaScript scrolling date picker with range/multi select, time picker, and light/dark themes",
+  "main": "dist/js/rolldate.min.js",
+  "types": "dist/js/rolldate.d.ts",
+  "style": "dist/css/rolldate.min.css",
+  "unpkg": "dist/js/rolldate.min.js",
+  "jsdelivr": "dist/js/rolldate.min.js",
+  "exports": {
+    ".": {
+      "types": "./dist/js/rolldate.d.ts",
+      "import": "./dist/js/rolldate.js",
+      "require": "./dist/js/rolldate.js",
+      "default": "./dist/js/rolldate.js"
+    },
+    "./min": "./dist/js/rolldate.min.js",
+    "./css": "./dist/css/rolldate.css",
+    "./css/min": "./dist/css/rolldate.min.css",
+    "./styles": "./dist/css/rolldate.min.css",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "types",
+    "LICENSE",
+    "README.md"
+  ],
+  "bugs": {
+    "url": "https://github.com/Abramov-Front-end/rolldate-core/issues",
+    "email": "rolldate.support@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Abramov-Front-end/rolldate-core.git"
+  },
+  "homepage": "https://rolldate-demo.vercel.app/",
+  "keywords": [
+    "calendar",
+    "datepicker",
+    "date-picker",
+    "timepicker",
+    "scroll",
+    "javascript",
+    "rolldate",
+    "typescript"
+  ],
+  "author": "Abramov Yevhen <rolldate.support@gmail.com>",
+  "license": "MIT"
+}
