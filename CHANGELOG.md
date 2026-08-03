@@ -15,6 +15,7 @@ All notable changes to `@rolldate/core` are documented here.
 
 ### Changed
 
+- **Bundle size** — `rolldate.min.js` is ~52 KB minified / ~13 KB gzip (was ~47 KB / ~12 KB in 1.0.x), mainly from highlights, range presets, and runtime API
 - **Range styling** — filled background (violet palette) instead of borders; distinct from Today (blue accent)
 - Range presets apply selection via CSS classes only (no calendar jump / full DOM rebuild)
 - Presets respect visible month and first selected date as anchor for “N days” ranges

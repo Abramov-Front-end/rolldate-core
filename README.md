@@ -19,7 +19,7 @@ JavaScript scrolling date picker — single / range / multi select, optional tim
 - **Date + time** — optional footer time picker (24h or 12h AM/PM), configurable minute step
 - **Popup or inline** — attach to an input or render inside any container
 - **Light & dark** — built-in themes, no extra CSS framework
-- **Small footprint** — ~45 KB minified JS; no React/Vue/jQuery dependency
+- **Small footprint** — ~52 KB minified JS (~13 KB gzip); no React/Vue/jQuery dependency
 - **Runtime API** — open/close, disable dates, highlights, range presets, `goToDate`, `getValue` / `setValue`
 
 ## Install
