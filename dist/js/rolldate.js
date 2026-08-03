@@ -518,13 +518,39 @@ var RollDate = (function () {
             return header
         }
 
-        dates(array, selectedDates = [], selectType = 'single') {
+        #highlightDots(colors = [], maxVisible = 5) {
+            if (!colors.length) return ''
+
+            const visible = colors.slice(0, maxVisible);
+            const extra = colors.length - maxVisible;
+            const many = visible.length > 3;
+            const dotClass = many
+                ? 'RollDate__calendar__day-dot RollDate__calendar__day-dot--compact'
+                : 'RollDate__calendar__day-dot';
+
+            const dots = visible.map(color => {
+                if (color) {
+                    return `<span class="${dotClass} RollDate__calendar__day-dot--custom" style="--rd-highlight-dot:${color}"></span>`
+                }
+                return `<span class="${dotClass}"></span>`
+            }).join('');
+
+            const more = extra > 0
+                ? `<span class="RollDate__calendar__day-dot RollDate__calendar__day-dot--more">+${extra}</span>`
+                : '';
+
+            return `<span class="RollDate__calendar__day-dots" aria-hidden="true">${dots}${more}</span>`
+        }
+
+        dates(array, selectedDates = [], selectType = 'single', getHighlight = () => null) {
             let datesHtml = '';
             const today = new Date();
 
             for (let i = 0; i < array.length; i++) {
                 const date = array[i].date;
                 const disabledClass = array[i].disabled ? 'RollDate__calendar__day--disabled' : '';
+                const highlight = getHighlight(date);
+                const highlightDots = highlight ? this.#highlightDots(highlight.colors) : '';
                 const isToday = date.toDateString() === today.toDateString();
 
                 // Resolve selection class for current date cell.
@@ -549,11 +575,11 @@ var RollDate = (function () {
                     }
                 }
 
-                datesHtml += `<div class="RollDate__calendar__day ${disabledClass} ${isToday ? 'RollDate__calendar__day--today' : ''} ${selectionClass}" 
+                datesHtml += `<div class="RollDate__calendar__day ${disabledClass} ${isToday ? 'RollDate__calendar__day--today' : ''} ${selectionClass}"
                             data-bind='["year", "month"]'
                             data-year="${date.getFullYear()}"
                             data-month="${date.getMonth()}"  
-                            data-day="${date.getDate()}">${date.getDate()}</div>`;
+                            data-day="${date.getDate()}">${date.getDate()}${highlightDots}</div>`;
             }
 
             return datesHtml
@@ -629,9 +655,6 @@ var RollDate = (function () {
         #lastEdgeTriggerAt = 0
         #isTouchDragging = false
         #touchLastY = 0
-        #touchLastTime = 0
-        #touchVelocityY = 0
-        #touchMomentumId = null
         
         constructor(body, methods = {
             dominant: () => console.error('Function "dominant" is not found'),
@@ -692,11 +715,8 @@ var RollDate = (function () {
 
         touchStartHandler(e) {
             if (!e.touches || e.touches.length !== 1) return
-            this.#cancelTouchMomentum();
             this.#isTouchDragging = true;
             this.#touchLastY = e.touches[0].clientY;
-            this.#touchLastTime = performance.now();
-            this.#touchVelocityY = 0;
             this.#edgeTriggeredInCurrentWheel = false;
         }
 
@@ -706,16 +726,7 @@ var RollDate = (function () {
 
             const currentY = e.touches[0].clientY;
             const deltaY = currentY - this.#touchLastY;
-            const now = performance.now();
-            const dt = now - this.#touchLastTime;
-
-            if (dt > 0 && dt < 120) {
-                const instantVelocity = deltaY / dt;
-                this.#touchVelocityY = this.#touchVelocityY * 0.65 + instantVelocity * 0.35;
-            }
-
             this.#touchLastY = currentY;
-            this.#touchLastTime = now;
 
             if (Math.abs(deltaY) < 1) return
 
@@ -729,47 +740,6 @@ var RollDate = (function () {
         touchEndHandler() {
             this.#isTouchDragging = false;
             this.#edgeTriggeredInCurrentWheel = false;
-
-            const velocityPerFrame = this.#touchVelocityY * 16;
-            if (Math.abs(velocityPerFrame) >= 0.4) {
-                this.#runTouchMomentum(velocityPerFrame);
-            }
-        }
-
-        #cancelTouchMomentum() {
-            if (this.#touchMomentumId !== null) {
-                cancelAnimationFrame(this.#touchMomentumId);
-                this.#touchMomentumId = null;
-            }
-        }
-
-        #runTouchMomentum(velocity) {
-            this.#cancelTouchMomentum();
-
-            const step = () => {
-                if (Math.abs(velocity) < 0.35 || this.blocked) {
-                    this.#touchMomentumId = null;
-                    this.#edgeTriggeredInCurrentWheel = false;
-                    return
-                }
-
-                this.offset += velocity;
-                velocity *= 0.92;
-                this.dominant();
-
-                const direction = velocity < 0 ? 'down' : 'up';
-                this.checkEdge(direction);
-
-                if (this.blocked) {
-                    this.#touchMomentumId = null;
-                    this.#edgeTriggeredInCurrentWheel = false;
-                    return
-                }
-
-                this.#touchMomentumId = requestAnimationFrame(step);
-            };
-
-            this.#touchMomentumId = requestAnimationFrame(step);
         }
 
         apply() {
@@ -840,7 +810,6 @@ var RollDate = (function () {
         }
 
         destroy() {
-            this.#cancelTouchMomentum();
             if (this.#boundWheelHandler) {
                 this.$body.removeEventListener('wheel', this.#boundWheelHandler);
             }
@@ -862,18 +831,11 @@ var RollDate = (function () {
             this.ctx = context;
         }
 
-        #isDayDisabled(date) {
-            const d = date instanceof Date ? date : new Date(date);
-            if (this.ctx.options.minDate && d < this.ctx.options.minDate) return true
-            if (this.ctx.options.maxDate && d > this.ctx.options.maxDate) return true
-            return typeof this.ctx.isDateDisabled === 'function' && this.ctx.isDateDisabled(d)
-        }
-
         update(direction) {
             const period = this.ctx.period;
             const isUp = direction === 'up';
 
-            // Strict boundary checks to stop loading beyond min/max limits.
+            // 🔑 Точна перевірка меж
             if (isUp) {
                 if (period === 'year') {
                     if (this.ctx.data.up_date.getFullYear() <= this.ctx.options.minDate.getFullYear()) {
@@ -918,7 +880,7 @@ var RollDate = (function () {
                             for (let d = new Date(newFirst); d < upDate; d.setDate(d.getDate() + 1)) {
                                 newDates.push({
                                     date: new Date(d),
-                                    disabled: this.#isDayDisabled(d)
+                                    disabled: this.ctx?.options?.minDate > new Date(d) || false
                                 });
                             }
                             return { items: newDates, newBound: newFirst }
@@ -939,7 +901,7 @@ var RollDate = (function () {
                             for (let d = firstNew; d <= newLast; d.setDate(d.getDate() + 1)) {
                                 newDates.push({
                                     date: new Date(d),
-                                    disabled: this.#isDayDisabled(d)
+                                    disabled: this.ctx?.options?.maxDate < new Date(d) || false
                                 });
                             }
                             return { items: newDates, newBound: newLast }
@@ -966,7 +928,7 @@ var RollDate = (function () {
                         };
 
                         if (isUp) {
-                            // Generate full-year chunks (multiple of 12) so Jan always starts grid rows.
+                            // Генеруємо повними роками (кратно 12), щоб Jan завжди був ліворуч у сітці.
                             let curr = new Date(upDate);
                             for (let i = 0; i < this.count; i++) {
                                 curr.setMonth(curr.getMonth() - 1);
@@ -980,7 +942,7 @@ var RollDate = (function () {
                                 : upDate;
                             return { items: newDates, newBound }
                         } else {
-                            // Generate full-year chunks to keep row structure stable while scrolling.
+                            // Генеруємо повними роками (кратно 12), щоб структура рядків не "плавала".
                             let curr = new Date(downDate);
                             curr.setMonth(curr.getMonth() + 1);
                             for (let i = 0; i < this.count; i++) {
@@ -1005,7 +967,7 @@ var RollDate = (function () {
                     getNewItems: function (upDate, downDate) {
                         const newDates = [];
                         if (isUp) {
-                            // Generate strictly before upDate year.
+                            // 🔑 Генерація СТРОГО перед upDate.getFullYear()
                             const startYear = upDate.getFullYear() - this.count;
                             for (let y = startYear; y < upDate.getFullYear(); y++) {
                                 if (y < this.ctx.options.minDate.getFullYear()) continue
@@ -1019,7 +981,7 @@ var RollDate = (function () {
                                 : upDate;
                             return { items: newDates, newBound }
                         } else {
-                            // Generate strictly after downDate year.
+                            // 🔑 Генерація СТРОГО після downDate.getFullYear()
                             const startYear = downDate.getFullYear() + 1;
                             for (let y = startYear; y < startYear + this.count; y++) {
                                 if (y > this.ctx.options.maxDate.getFullYear()) break
@@ -1078,7 +1040,7 @@ var RollDate = (function () {
                 items.slice(0, remove).forEach(item => item.remove());
             }
 
-            // Recalculate bounds from current DOM after trim to avoid flicker and endless refill loops.
+            // Перераховуємо межі тільки з поточного DOM після trim, щоб уникнути "миготіння" і зациклення дозагрузки.
             const currentItems = Array.from(block.querySelectorAll(`.RollDate__calendar__${period}`));
             const firstItem = currentItems[0];
             const lastItem = currentItems[currentItems.length - 1];
@@ -1413,6 +1375,7 @@ var RollDate = (function () {
         #selectedDates = []
         #firstOpen = true
         #disabledDateStamps = new Set()
+        #highlightDateMap = new Map()
         #docClickHandler = null
         #openTriggers = []
 
@@ -1457,13 +1420,92 @@ var RollDate = (function () {
             return new Date(date.getFullYear(), date.getMonth(), date.getDate())
         }
 
-        #buildDisabledDateSet(dates = []) {
+        #buildDateStampSet(dates = []) {
             const set = new Set();
             dates.forEach(dateLike => {
                 const normalized = this.#normalizeDateInput(dateLike);
                 if (normalized) set.add(this.#toDateStamp(normalized));
             });
             return set
+        }
+
+        #buildDisabledDateSet(dates = []) {
+            return this.#buildDateStampSet(dates)
+        }
+
+        #buildHighlightDateMap(dates = []) {
+            const map = new Map();
+            if (!Array.isArray(dates)) return map
+
+            dates.forEach(entry => {
+                const item = this.#normalizeHighlightEntry(entry);
+                if (!item) return
+
+                const existing = map.get(item.stamp) || [];
+                map.set(item.stamp, existing.concat(item.colors));
+            });
+
+            return map
+        }
+
+        #normalizeHighlightEntry(entry) {
+            if (entry == null) return null
+
+            if (typeof entry === 'string' || entry instanceof Date) {
+                const normalized = this.#normalizeDateInput(entry);
+                if (!normalized) return null
+                return {
+                    stamp: this.#toDateStamp(normalized),
+                    colors: [null]
+                }
+            }
+
+            if (typeof entry === 'object' && entry.date != null) {
+                const normalized = this.#normalizeDateInput(entry.date);
+                if (!normalized) return null
+                const stamp = this.#toDateStamp(normalized);
+
+                if (Array.isArray(entry.colors)) {
+                    const colors = entry.colors.map(color => {
+                        if (color == null || color === '') return null
+                        return this.#sanitizeHighlightColor(color)
+                    }).filter(color => color !== undefined);
+
+                    if (colors.length) return { stamp, colors }
+                }
+
+                if (entry.color != null && entry.color !== '') {
+                    const color = this.#sanitizeHighlightColor(entry.color);
+                    if (color) return { stamp, colors: [color] }
+                }
+
+                return { stamp, colors: [null] }
+            }
+
+            return null
+        }
+
+        #sanitizeHighlightColor(color) {
+            if (typeof color !== 'string') return null
+            const value = color.trim();
+            if (!value) return null
+
+            if (/^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(value)) return value
+            if (/^(rgb|rgba|hsl|hsla)\([^)]+\)$/i.test(value)) return value
+            if (/^var\(--[\w-]+\)$/.test(value)) return value
+
+            return null
+        }
+
+        #highlightMapToOptionsArray() {
+            return [...this.#highlightDateMap.entries()].map(([stamp, colors]) => {
+                const date = new Date(stamp);
+
+                if (colors.length === 1 && colors[0] === null) return date
+                if (colors.length === 1 && colors[0]) return { date, color: colors[0] }
+
+                return { date, colors }
+            })
         }
 
         #disableInputAssist(input) {
@@ -1476,6 +1518,16 @@ var RollDate = (function () {
 
         #isDateDisabled(date) {
             return this.#disabledDateStamps.has(this.#toDateStamp(date))
+        }
+
+        #isDateHighlighted(date) {
+            return this.#highlightDateMap.has(this.#toDateStamp(date))
+        }
+
+        #getHighlightMeta(date) {
+            const colors = this.#highlightDateMap.get(this.#toDateStamp(date));
+            if (!colors?.length) return null
+            return { colors }
         }
 
         #notifySelectionChange() {
@@ -1553,6 +1605,69 @@ var RollDate = (function () {
             }
         }
 
+        #mountRangePresets() {
+            const presets = Array.isArray(this.options.rangePresets)
+                ? this.options.rangePresets
+                : [];
+
+            if (this.options.selectType !== 'range' || !presets.length) return
+
+            let bar = this.$container.querySelector('.RollDate__presets');
+            if (!bar) {
+                bar = document.createElement('div');
+                bar.className = 'RollDate__presets';
+                const footer = this.$container.querySelector('.RollDate__footer');
+                const calendar = this.$container.querySelector('.RollDate__calendar');
+                if (footer) footer.before(bar);
+                else if (calendar) calendar.after(bar);
+            }
+
+            bar.innerHTML = '';
+            presets.forEach(preset => {
+                if (!preset?.label || typeof preset.getRange !== 'function') return
+
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'RollDate__presets__button';
+                btn.textContent = preset.label;
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.#applyRangePreset(preset);
+                });
+                bar.append(btn);
+            });
+
+            if (bar.childElementCount) {
+                this.$container.classList.add('RollDate__has-presets');
+            }
+        }
+
+        #applyRangePreset(preset) {
+            const result = preset.getRange(this);
+            if (!Array.isArray(result) || result.length < 2) return
+
+            const normalized = result
+                .slice(0, 2)
+                .map(dateLike => this.#normalizeDateInput(dateLike))
+                .filter(Boolean)
+                .map(date => this.#clampDateToRange(date, this.options.minDate, this.options.maxDate))
+                .filter(date => !this.#isDateDisabled(date));
+
+            if (normalized.length < 2) return
+
+            let [start, end] = normalized;
+            if (start > end) [start, end] = [end, start];
+
+            this.#selectedDates = [
+                this.#applyTimeToDate(start),
+                this.#applyTimeToDate(end)
+            ];
+            this.#notifySelectionChange();
+            this.#updateInputValue();
+            this.#paintRangeSelection();
+        }
+
         #initTimePicker() {
             const start = this.options.startDate;
             this.timePicker = new TimePicker(this.dom.$time, {
@@ -1609,11 +1724,13 @@ var RollDate = (function () {
                 onViewChange: () => {},
                 onHoverDate: () => {},
                 disabledDates: [],
+                highlightDates: [],
                 closeOnSelect: true,
                 enableTime: false,
                 use12Hour: false,
                 timeStep: 1,
                 footerButtons: [],
+                rangePresets: [],
                 hapticFeedback: true,
                 ...options
             };
@@ -1656,6 +1773,7 @@ var RollDate = (function () {
                 this.options.maxDate
             );
             this.#disabledDateStamps = this.#buildDisabledDateSet(this.options.disabledDates);
+            this.#highlightDateMap = this.#buildHighlightDateMap(this.options.highlightDates);
             if (this.#isDateDisabled(this.options.startDate)) {
                 this.options.startDate = new Date(this.options.minDate);
             }
@@ -1728,6 +1846,7 @@ var RollDate = (function () {
             };
 
             this.#initFooterButtons();
+            this.#mountRangePresets();
             if (this.options.enableTime && this.dom.$time) {
                 this.#initTimePicker();
             }
@@ -1788,7 +1907,23 @@ var RollDate = (function () {
             this.$container.style.zIndex = '10000';
         }
 
-        #updateView() {
+        #updateView(viewNumberOrOptions, maybeOptions) {
+            let options = {};
+
+            if (typeof viewNumberOrOptions === 'object' && viewNumberOrOptions !== null) {
+                options = viewNumberOrOptions;
+            } else {
+                if (typeof viewNumberOrOptions === 'number') {
+                    this.#viewNumber = viewNumberOrOptions;
+                }
+                if (typeof maybeOptions === 'object' && maybeOptions !== null) {
+                    options = maybeOptions;
+                }
+            }
+
+            const preserveScroll = options.preserveScroll === true;
+            const savedOffset = preserveScroll ? this.scroll.offset : null;
+
             this.#updateHeader();
             this.scroll.blocked = false;
             this.observe.un(this.period);
@@ -1800,7 +1935,8 @@ var RollDate = (function () {
                     this.dom.$days_block.innerHTML = this.render.dates(
                         days,
                         this.#selectedDates,
-                        this.options.selectType
+                        this.options.selectType,
+                        date => this.#getHighlightMeta(date)
                     );
                     break
 
@@ -1809,41 +1945,49 @@ var RollDate = (function () {
                     this.dom[`$${this.period}s_block`].innerHTML = this.render[`${this.period}s`](dates);
             }
 
-            const selectors = {
-                day: `.RollDate__calendar__day[data-year="${this.data.current_year}"][data-month="${this.data.current_month}"]`,
-                month: `.RollDate__calendar__month[data-year="${this.data.current_year}"][data-month="0"]`,
-                year: `.RollDate__calendar__year[data-decade="${this.data.current_decade}"][data-year="${this.data.current_year}"]`
-            };
-            let $firstEl = this.$container.querySelector(selectors[this.period]);
-            if (!$firstEl) {
-                const fallbacks = {
-                    day: `.RollDate__calendar__day[data-year="${this.data.current_year}"]`,
-                    month: `.RollDate__calendar__month[data-year="${this.data.current_year}"]`,
-                    year: `.RollDate__calendar__year[data-decade="${this.data.current_decade}"]`
+            const applyScroll = () => {
+                const $scrollBlock = this.dom.$body.querySelector('.RollDate__calendar__scrollblock');
+                const bodyHeight = this.dom.$body.clientHeight;
+                const blockHeight = $scrollBlock.clientHeight;
+
+                if (blockHeight <= bodyHeight) {
+                    this.scroll.setBaseOffset(bodyHeight - blockHeight);
+                    this.scroll.offset = 0;
+                    return
+                }
+
+                this.scroll.setBaseOffset(0);
+                this.scroll.resetMinScroll();
+
+                if (preserveScroll && savedOffset != null) {
+                    this.scroll.offset = Math.max(savedOffset, this.scroll.minScroll);
+                    return
+                }
+
+                const selectors = {
+                    day: `.RollDate__calendar__day[data-year="${this.data.current_year}"][data-month="${this.data.current_month}"]`,
+                    month: `.RollDate__calendar__month[data-year="${this.data.current_year}"][data-month="0"]`,
+                    year: `.RollDate__calendar__year[data-decade="${this.data.current_decade}"][data-year="${this.data.current_year}"]`
                 };
-                $firstEl = this.$container.querySelector(fallbacks[this.period]);
-            }
+                let $firstEl = this.$container.querySelector(selectors[this.period]);
+                if (!$firstEl) {
+                    const fallbacks = {
+                        day: `.RollDate__calendar__day[data-year="${this.data.current_year}"]`,
+                        month: `.RollDate__calendar__month[data-year="${this.data.current_year}"]`,
+                        year: `.RollDate__calendar__year[data-decade="${this.data.current_decade}"]`
+                    };
+                    $firstEl = this.$container.querySelector(fallbacks[this.period]);
+                }
 
-            if ($firstEl) {
-                setTimeout(() => {
-                    const $scrollBlock = this.dom.$body.querySelector('.RollDate__calendar__scrollblock');
-                    const bodyHeight = this.dom.$body.clientHeight;
-                    const blockHeight = $scrollBlock.clientHeight;
+                if (!$firstEl) return
 
-                    if (blockHeight <= bodyHeight) {
-                        this.scroll.setBaseOffset(bodyHeight - blockHeight);
-                        this.scroll.offset = 0;
-                        return
-                    }
+                const containerRect = $scrollBlock.getBoundingClientRect();
+                const firstRect = $firstEl.getBoundingClientRect();
+                const firstRectOffset = -(firstRect.top - containerRect.top);
+                this.scroll.offset = Math.max(firstRectOffset, this.scroll.minScroll);
+            };
 
-                    this.scroll.setBaseOffset(0);
-                    const containerRect = $scrollBlock.getBoundingClientRect();
-                    const firstRect = $firstEl.getBoundingClientRect();
-                    const firstRectOffset = -(firstRect.top - containerRect.top);
-                    const minScroll = this.scroll.minScroll;
-                    this.scroll.offset = Math.max(firstRectOffset, minScroll);
-                }, 0);
-            }
+            setTimeout(applyScroll, 0);
 
             this.observe.on(this.period, item => {
                 const cond = JSON.parse(item.dataset.bind).every(data => Number(item.dataset[data]) === this.data[`current_${data}`]);
@@ -2205,6 +2349,20 @@ var RollDate = (function () {
             return this.#selectedDates
         }
 
+        /** Visible calendar month (updates while scrolling). Month is 0–11. */
+        getViewMonth() {
+            return {
+                year: this.data.current_year,
+                month: this.data.current_month
+            }
+        }
+
+        /** First day of the month currently shown in the calendar. */
+        getViewDate() {
+            const { year, month } = this.getViewMonth();
+            return new Date(year, month, 1)
+        }
+
         setDisabledDates(dates = []) {
             this.options.disabledDates = Array.isArray(dates) ? dates : [];
             this.#disabledDateStamps = this.#buildDisabledDateSet(this.options.disabledDates);
@@ -2232,6 +2390,251 @@ var RollDate = (function () {
         isDateDisabled(dateLike) {
             const normalized = this.#normalizeDateInput(dateLike);
             return normalized ? this.#isDateDisabled(normalized) : false
+        }
+
+        setHighlightDates(dates = []) {
+            this.options.highlightDates = Array.isArray(dates) ? dates : [];
+            this.#highlightDateMap = this.#buildHighlightDateMap(this.options.highlightDates);
+            this.#updateView(this.#viewNumber);
+        }
+
+        highlightDate(dateLike, color) {
+            const normalized = this.#normalizeDateInput(dateLike);
+            if (!normalized) return
+
+            const stamp = this.#toDateStamp(normalized);
+            const existing = this.#highlightDateMap.get(stamp) || [];
+            const nextColor = color == null || color === ''
+                ? null
+                : this.#sanitizeHighlightColor(color);
+
+            if (color != null && color !== '' && nextColor === undefined) return
+
+            existing.push(nextColor ?? null);
+            this.#highlightDateMap.set(stamp, existing);
+            this.options.highlightDates = this.#highlightMapToOptionsArray();
+            this.#updateView(this.#viewNumber);
+        }
+
+        unhighlightDate(dateLike, color) {
+            const normalized = this.#normalizeDateInput(dateLike);
+            if (!normalized) return
+
+            const stamp = this.#toDateStamp(normalized);
+            const existing = this.#highlightDateMap.get(stamp);
+            if (!existing?.length) return
+
+            if (color === undefined) {
+                this.#highlightDateMap.delete(stamp);
+            } else {
+                const target = color == null || color === ''
+                    ? null
+                    : this.#sanitizeHighlightColor(color);
+
+                const index = existing.findIndex(item => item === target);
+                if (index === -1) return
+
+                existing.splice(index, 1);
+                if (existing.length) {
+                    this.#highlightDateMap.set(stamp, existing);
+                } else {
+                    this.#highlightDateMap.delete(stamp);
+                }
+            }
+
+            this.options.highlightDates = this.#highlightMapToOptionsArray();
+            this.#updateView(this.#viewNumber);
+        }
+
+        isDateHighlighted(dateLike) {
+            const normalized = this.#normalizeDateInput(dateLike);
+            return normalized ? this.#isDateHighlighted(normalized) : false
+        }
+
+        getHighlightColors(dateLike) {
+            const normalized = this.#normalizeDateInput(dateLike);
+            if (!normalized) return []
+            return [...(this.#highlightDateMap.get(this.#toDateStamp(normalized)) || [])]
+        }
+
+        getHighlightColor(dateLike) {
+            return this.getHighlightColors(dateLike).find(color => color != null) ?? null
+        }
+
+        goToDate(dateLike) {
+            const normalized = this.#normalizeDateInput(dateLike);
+            if (!normalized) return false
+
+            const clamped = this.#clampDateToRange(
+                normalized,
+                this.options.minDate,
+                this.options.maxDate
+            );
+
+            this.data.current_year = clamped.getFullYear();
+            this.data.current_month = clamped.getMonth();
+            this.data.current_decade = getDecade(clamped.getFullYear());
+
+            if (this.#viewNumber !== 0) {
+                this.#viewNumber = 0;
+                for (const period of this.#viewPeriodNames) {
+                    this.$container.classList.remove('RollDate__calendar__type--' + period + 's');
+                }
+                this.$container.classList.add('RollDate__calendar__type--days');
+            }
+
+            this.#updateView(0);
+            return true
+        }
+
+        getValue() {
+            if (this.options.selectType === 'single') {
+                const date = this.#selectedDates[0];
+                return date ? new Date(date.getTime()) : null
+            }
+
+            return this.#selectedDates.map(date => new Date(date.getTime()))
+        }
+
+        setValue(value) {
+            if (value == null || value === '') {
+                this.clearSelection();
+                return true
+            }
+
+            if (this.options.selectType === 'single') {
+                const normalized = this.#normalizeDateInput(value);
+                if (!normalized || this.#isDateDisabled(normalized)) return false
+                this.#selectedDates = [this.#applyTimeToDate(normalized)];
+            } else if (this.options.selectType === 'range') {
+                const raw = Array.isArray(value) ? value : [value];
+                const parsed = raw
+                    .map(item => this.#normalizeDateInput(item))
+                    .filter(Boolean)
+                    .map(date => this.#clampDateToRange(date, this.options.minDate, this.options.maxDate))
+                    .filter(date => !this.#isDateDisabled(date));
+
+                if (!parsed.length) return false
+
+                let start = parsed[0];
+                let end = parsed.length > 1 ? parsed[1] : parsed[0];
+                if (start > end) [start, end] = [end, start];
+
+                this.#selectedDates = parsed.length > 1
+                    ? [this.#applyTimeToDate(start), this.#applyTimeToDate(end)]
+                    : [this.#applyTimeToDate(start)];
+            } else {
+                const raw = Array.isArray(value) ? value : [value];
+                const parsed = raw
+                    .map(item => this.#normalizeDateInput(item))
+                    .filter(Boolean)
+                    .map(date => this.#clampDateToRange(date, this.options.minDate, this.options.maxDate))
+                    .filter(date => !this.#isDateDisabled(date))
+                    .map(date => this.#applyTimeToDate(date));
+
+                if (!parsed.length) return false
+
+                const unique = [];
+                const seen = new Set();
+                parsed.forEach(date => {
+                    const stamp = this.#toDateStamp(date);
+                    if (seen.has(stamp)) return
+                    seen.add(stamp);
+                    unique.push(date);
+                });
+                this.#selectedDates = unique;
+            }
+
+            this.#paintSelection();
+            this.#notifySelectionChange();
+            this.#updateInputValue();
+            return true
+        }
+
+        #dayElementStamp(dayEl) {
+            return this.#toDateStamp(new Date(
+                Number(dayEl.dataset.year),
+                Number(dayEl.dataset.month),
+                Number(dayEl.dataset.day)
+            ))
+        }
+
+        #findDayElement(date) {
+            if (!(date instanceof Date)) return null
+            return this.$container.querySelector(
+                `.RollDate__calendar__day[data-year="${date.getFullYear()}"][data-month="${date.getMonth()}"][data-day="${date.getDate()}"]`
+            )
+        }
+
+        #paintRangeSelection() {
+            this.$container.querySelectorAll('[data-day]').forEach(dayEl => {
+                dayEl.classList.remove(
+                    'RollDate__calendar__day--range-first',
+                    'RollDate__calendar__day--range-last',
+                    'RollDate__calendar__day--range-selected'
+                );
+            });
+
+            if (!this.#selectedDates.length) return
+
+            const firstStamp = this.#toDateStamp(this.#selectedDates[0]);
+
+            if (this.#selectedDates.length === 1) {
+                this.#findDayElement(this.#selectedDates[0])
+                    ?.classList.add('RollDate__calendar__day--range-first');
+                return
+            }
+
+            const endStamp = this.#toDateStamp(this.#selectedDates[1]);
+
+            this.$container.querySelectorAll('[data-day]').forEach(dayEl => {
+                const stamp = this.#dayElementStamp(dayEl);
+
+                if (stamp === firstStamp) {
+                    dayEl.classList.add('RollDate__calendar__day--range-first');
+                } else if (stamp === endStamp) {
+                    dayEl.classList.add('RollDate__calendar__day--range-last');
+                } else if (stamp > firstStamp && stamp < endStamp) {
+                    dayEl.classList.add('RollDate__calendar__day--range-selected');
+                }
+            });
+        }
+
+        #paintSingleSelection() {
+            this.$container.querySelectorAll('[data-day]').forEach(dayEl => {
+                dayEl.classList.remove('RollDate__calendar__day--selected');
+            });
+
+            const selected = this.#selectedDates[0];
+            if (selected) {
+                this.#findDayElement(selected)?.classList.add('RollDate__calendar__day--selected');
+            }
+        }
+
+        #paintMultiSelection() {
+            const selectedStamps = new Set(this.#selectedDates.map(date => this.#toDateStamp(date)));
+
+            this.$container.querySelectorAll('[data-day]').forEach(dayEl => {
+                if (selectedStamps.has(this.#dayElementStamp(dayEl))) {
+                    dayEl.classList.add('RollDate__calendar__day--selected');
+                } else {
+                    dayEl.classList.remove('RollDate__calendar__day--selected');
+                }
+            });
+        }
+
+        #paintSelection() {
+            if (this.options.selectType === 'range') {
+                this.#paintRangeSelection();
+                return
+            }
+
+            if (this.options.selectType === 'multi') {
+                this.#paintMultiSelection();
+                return
+            }
+
+            this.#paintSingleSelection();
         }
 
         #clearRangeSelection() {
@@ -2432,9 +2835,10 @@ var RollDate = (function () {
                 this.#clearMultiSelection();
             } else {
                 this.#selectedDates = [];
+                this.$container.querySelectorAll('[data-day].RollDate__calendar__day--selected')
+                    .forEach(el => el.classList.remove('RollDate__calendar__day--selected'));
             }
 
-            this.#updateView(this.#viewNumber);
             this.#notifySelectionChange();
             this.#updateInputValue();
         }

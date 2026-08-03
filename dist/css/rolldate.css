@@ -17,6 +17,9 @@
   --rd-accent-strong: #368cfd;
   --rd-accent-dark: #1e5093;
   --rd-accent-muted: #375985;
+  --rd-range: #a78bfa;
+  --rd-range-strong: #7c3aed;
+  --rd-range-muted: #3d3558;
   --rd-button-icon: #fff;
   background: var(--rd-bg);
   border: 1px solid var(--rd-border);
@@ -43,6 +46,9 @@
   --rd-accent-strong: #368cfd;
   --rd-accent-dark: #1e5093;
   --rd-accent-muted: #375985;
+  --rd-range: #a78bfa;
+  --rd-range-strong: #7c3aed;
+  --rd-range-muted: #3d3558;
   --rd-button-icon: #fff;
 }
 .RollDate__container.RollDate__theme_light {
@@ -60,6 +66,9 @@
   --rd-accent-strong: #2d7cff;
   --rd-accent-dark: #1f5dc1;
   --rd-accent-muted: #d9e8ff;
+  --rd-range: #8b5cf6;
+  --rd-range-strong: #6d28d9;
+  --rd-range-muted: #ede9fe;
   --rd-button-icon: #334155;
 }
 .RollDate__container.RollDate__calendar__type--days .RollDate__calendar__header {
@@ -178,6 +187,7 @@
   transition: all 0.3s;
   border-radius: 4px;
   border: 2px solid transparent;
+  position: relative;
 }
 .RollDate__calendar__day:hover {
   border-color: var(--rd-hover-border);
@@ -188,27 +198,28 @@
 .RollDate__calendar__day--selected:hover {
   border-color: var(--rd-accent-strong);
 }
-.RollDate__calendar__day--range-first {
-  border-color: var(--rd-accent-dark);
-  border-right-color: transparent;
+.RollDate__calendar__day--range-first, .RollDate__calendar__day--range-last {
+  background: var(--rd-range-strong);
+  color: #fff;
+  border-color: transparent;
+  font-weight: 600;
 }
-.RollDate__calendar__day--range-first:hover {
-  border-color: var(--rd-accent-strong);
-  border-right-color: transparent;
+.RollDate__calendar__day--range-first:hover, .RollDate__calendar__day--range-last:hover {
+  background: var(--rd-range);
+  border-color: transparent;
+}
+.RollDate__calendar__day--range-first .RollDate__calendar__day-dot:not(.RollDate__calendar__day-dot--custom):not(.RollDate__calendar__day-dot--more), .RollDate__calendar__day--range-last .RollDate__calendar__day-dot:not(.RollDate__calendar__day-dot--custom):not(.RollDate__calendar__day-dot--more) {
+  background: #fff;
 }
 .RollDate__calendar__day--range-selected {
-  border-color: var(--rd-accent-dark) transparent var(--rd-accent-dark) transparent;
+  background: var(--rd-range-muted);
+  color: var(--rd-text-primary);
+  border-color: transparent;
+  border-radius: 2px;
 }
 .RollDate__calendar__day--range-selected:hover {
-  border-color: var(--rd-accent-strong) transparent var(--rd-accent-strong) transparent;
-}
-.RollDate__calendar__day--range-last {
-  border-color: var(--rd-accent-dark);
-  border-left-color: transparent;
-}
-.RollDate__calendar__day--range-last:hover {
-  border-color: var(--rd-accent-strong);
-  border-left-color: transparent;
+  background: var(--rd-range-muted);
+  border-color: transparent;
 }
 .RollDate__calendar__day--active {
   color: var(--rd-text-primary);
@@ -218,11 +229,56 @@
 }
 .RollDate__calendar__day--today {
   background: var(--rd-accent);
-  color: white;
+  color: #fff;
+  border-color: transparent;
 }
 .RollDate__calendar__day--today:hover {
   border-color: var(--rd-accent-strong);
   background: var(--rd-accent-strong);
+}
+.RollDate__calendar__day--today.RollDate__calendar__day--range-first, .RollDate__calendar__day--today.RollDate__calendar__day--range-last, .RollDate__calendar__day--today.RollDate__calendar__day--range-selected {
+  background: var(--rd-accent);
+  color: #fff;
+}
+.RollDate__calendar__day--today.RollDate__calendar__day--range-first:hover, .RollDate__calendar__day--today.RollDate__calendar__day--range-last:hover, .RollDate__calendar__day--today.RollDate__calendar__day--range-selected:hover {
+  background: var(--rd-accent-strong);
+  border-color: transparent;
+}
+.RollDate__calendar__day-dots {
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  justify-content: center;
+  max-width: calc(100% - 4px);
+  pointer-events: none;
+}
+.RollDate__calendar__day-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--rd-accent);
+  flex-shrink: 0;
+}
+.RollDate__calendar__day-dot--custom {
+  background: var(--rd-highlight-dot);
+}
+.RollDate__calendar__day-dot--compact {
+  width: 4px;
+  height: 4px;
+}
+.RollDate__calendar__day-dot--more {
+  width: auto;
+  height: auto;
+  background: none;
+  color: var(--rd-text-secondary);
+  font-size: 8px;
+  line-height: 1;
+  font-weight: 700;
+  padding-left: 1px;
 }
 .RollDate__calendar__day--disabled {
   color: var(--rd-text-disabled);
@@ -303,6 +359,30 @@
 }
 .RollDate__calendar__button[data-direction=next] {
   transform: rotate(-180deg);
+}
+.RollDate__presets {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--rd-border);
+}
+.RollDate__presets__button {
+  border: 1px solid var(--rd-border);
+  background: var(--rd-hover-bg);
+  color: var(--rd-text-primary);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+.RollDate__presets__button:hover {
+  border-color: var(--rd-range);
+  background: var(--rd-range-muted);
 }
 .RollDate__footer {
   flex: 0 0 auto;

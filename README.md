@@ -20,7 +20,7 @@ JavaScript scrolling date picker — single / range / multi select, optional tim
 - **Popup or inline** — attach to an input or render inside any container
 - **Light & dark** — built-in themes, no extra CSS framework
 - **Small footprint** — ~45 KB minified JS; no React/Vue/jQuery dependency
-- **Runtime API** — open/close, disable dates, clear selection, callbacks for open/close/hover
+- **Runtime API** — open/close, disable dates, highlights, range presets, `goToDate`, `getValue` / `setValue`
 
 ## Install
 
@@ -46,8 +46,8 @@ npm install @rolldate/core
 ## CDN (jsDelivr)
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@rolldate/core/dist/css/rolldate.min.css">
-<script src="https://cdn.jsdelivr.net/npm/@rolldate/core/dist/js/rolldate.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@rolldate/core@1/dist/css/rolldate.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@rolldate/core@1/dist/js/rolldate.min.js"></script>
 ```
 
 ## Bundler (ESM / CJS)
@@ -90,11 +90,58 @@ new RollDate('#date-input', {
   minDate: '01.01.2020',
   maxDate: '31.12.2030',
   closeOnSelect: true,
+  highlightDates: [
+    '12.08.2026',
+    { date: '15.08.2026', colors: ['#22c55e', '#ef4444'] }
+  ],
+  rangePresets: [
+    {
+      label: '7 days',
+      getRange(picker) {
+        const start = picker.selectedDates[0] ?? picker.getViewDate();
+        const end = new Date(start);
+        end.setDate(end.getDate() + 6);
+        return [start, end];
+      }
+    },
+    {
+      label: 'This month',
+      getRange(picker) {
+        const { year, month } = picker.getViewMonth();
+        return [new Date(year, month, 1), new Date(year, month + 1, 0)];
+      }
+    }
+  ],
   selectDate(date) {
     console.log(date);
   }
 });
 ```
+
+## Runtime methods (selection & navigation)
+
+| Method | Description |
+|--------|-------------|
+| `open()` / `close()` | Popup visibility |
+| `selectToday()` / `clearSelection()` | Built-in actions |
+| `goToDate(date)` | Scroll calendar to a date (no selection change) |
+| `getValue()` | `Date \| null` (single) or `Date[]` (range/multi) |
+| `setValue(value)` | Set selection; `null` clears |
+| `getViewMonth()` | `{ year, month }` — visible month after scroll |
+| `getViewDate()` | First day of visible month |
+| `setDisabledDates` / `disableDate` / `enableDate` | Disabled dates |
+| `setHighlightDates` / `highlightDate` / `unhighlightDate` | Day markers |
+
+Full API: https://rolldate-demo.vercel.app/docs
+
+## What's new in 1.1.0
+
+- Highlighted dates with optional colors and multiple dots per day (events / bookings)
+- Range presets tied to **visible month** and **first selected date**
+- Violet range fill styling (Today stays blue)
+- `goToDate`, `getValue`, `setValue`, `getViewMonth`
+
+See [CHANGELOG.md](./CHANGELOG.md).
 
 ## Package contents
 
