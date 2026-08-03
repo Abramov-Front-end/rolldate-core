@@ -2,6 +2,12 @@
 
 All notable changes to `@rolldate/core` are documented here.
 
+## [1.1.1] — 2026-08-03
+
+### Changed
+
+- **Docs** — README and demo site now reflect v1.1.0 bundle size (~52 KB min / ~13 KB gzip JS)
+
 ## [1.1.0] — 2026-08-03
 
 ### Added
