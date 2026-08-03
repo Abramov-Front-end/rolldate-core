@@ -28,7 +28,8 @@
     "types",
     "assets",
     "LICENSE",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md"
   ],
   "bugs": {
     "url": "https://github.com/Abramov-Front-end/rolldate-core/issues",
