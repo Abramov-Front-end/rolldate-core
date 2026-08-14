@@ -2,6 +2,17 @@
 
 All notable changes to `@rolldate/core` are documented here.
 
+## [1.1.3] — 2026-08-14
+
+### Added
+
+- **postinstall message** — friendly links to demo, docs, and GitHub after `npm install`
+
+### Changed
+
+- **README** — star/demo/docs CTA at the top
+- **Download ZIP** — refreshed bundle, TypeScript definitions, updated README.txt
+
 ## [1.1.2] — 2026-08-14
 
 ### Fixed

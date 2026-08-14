@@ -1,3 +1,6 @@
+> **⭐ If RollDate saves you time, [star the repo](https://github.com/Abramov-Front-end/rolldate-core)** — it helps others discover it.  
+> **[Live demo](https://rolldate-demo.vercel.app/)** · **[Docs](https://rolldate-demo.vercel.app/docs.html)** · **[Issues & feedback](https://github.com/Abramov-Front-end/rolldate-core/issues)**
+
 # RollDate (`@rolldate/core`)
 
 JavaScript scrolling date picker — single / range / multi select, optional time picker (24h / 12h), light & dark themes. No framework required.
