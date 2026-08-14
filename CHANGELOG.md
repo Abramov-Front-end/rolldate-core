@@ -2,6 +2,12 @@
 
 All notable changes to `@rolldate/core` are documented here.
 
+## [1.1.2] — 2026-08-14
+
+### Fixed
+
+- **Mobile scroll inertia** — touch momentum restored after swipe release (calendar days/months/years)
+
 ## [1.1.1] — 2026-08-03
 
 ### Changed

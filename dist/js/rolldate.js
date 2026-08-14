@@ -655,6 +655,9 @@ var RollDate = (function () {
         #lastEdgeTriggerAt = 0
         #isTouchDragging = false
         #touchLastY = 0
+        #touchLastTime = 0
+        #touchVelocity = 0
+        #momentumId = 0
         
         constructor(body, methods = {
             dominant: () => console.error('Function "dominant" is not found'),
@@ -684,6 +687,7 @@ var RollDate = (function () {
         wheelHandler(e) {
             e.preventDefault();
             e.stopPropagation();
+            this.#cancelMomentum();
 
             const rawDelta = e.deltaY * 0.85;
             const steps = Math.abs(rawDelta) > 50 ? 20 : 1;
@@ -715,8 +719,11 @@ var RollDate = (function () {
 
         touchStartHandler(e) {
             if (!e.touches || e.touches.length !== 1) return
+            this.#cancelMomentum();
             this.#isTouchDragging = true;
             this.#touchLastY = e.touches[0].clientY;
+            this.#touchLastTime = performance.now();
+            this.#touchVelocity = 0;
             this.#edgeTriggeredInCurrentWheel = false;
         }
 
@@ -726,7 +733,13 @@ var RollDate = (function () {
 
             const currentY = e.touches[0].clientY;
             const deltaY = currentY - this.#touchLastY;
+            const now = performance.now();
+            const dt = now - this.#touchLastTime;
+            if (dt > 0 && dt < 120) {
+                this.#touchVelocity = this.#touchVelocity * 0.65 + (deltaY / dt) * 0.35;
+            }
             this.#touchLastY = currentY;
+            this.#touchLastTime = now;
 
             if (Math.abs(deltaY) < 1) return
 
@@ -740,6 +753,38 @@ var RollDate = (function () {
         touchEndHandler() {
             this.#isTouchDragging = false;
             this.#edgeTriggeredInCurrentWheel = false;
+
+            const v = this.#touchVelocity * 16;
+            if (Math.abs(v) < 0.4) return
+
+            let velocity = v;
+            const step = () => {
+                if (Math.abs(velocity) < 0.35) {
+                    this.#momentumId = 0;
+                    return
+                }
+
+                const prevOffset = this.#offset;
+                this.offset += velocity;
+                if (this.#offset === prevOffset) {
+                    this.#momentumId = 0;
+                    return
+                }
+
+                this.dominant();
+                const direction = velocity < 0 ? 'down' : 'up';
+                this.checkEdge(direction);
+
+                velocity *= 0.92;
+                this.#momentumId = requestAnimationFrame(step);
+            };
+            this.#momentumId = requestAnimationFrame(step);
+        }
+
+        #cancelMomentum() {
+            if (!this.#momentumId) return
+            cancelAnimationFrame(this.#momentumId);
+            this.#momentumId = 0;
         }
 
         apply() {
@@ -810,6 +855,7 @@ var RollDate = (function () {
         }
 
         destroy() {
+            this.#cancelMomentum();
             if (this.#boundWheelHandler) {
                 this.$body.removeEventListener('wheel', this.#boundWheelHandler);
             }
