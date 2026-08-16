@@ -1,6 +1,12 @@
 > **⭐ If RollDate saves you time, [star the repo](https://github.com/Abramov-Front-end/rolldate-core)** — it helps others discover it.  
 > **[Live demo](https://rolldate-demo.vercel.app/)** · **[Docs](https://rolldate-demo.vercel.app/docs.html)** · **[Issues & feedback](https://github.com/Abramov-Front-end/rolldate-core/issues)**
 
+<p align="center">
+  <a href="https://www.producthunt.com/products/rolldate?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-rolldate" target="_blank" rel="noopener noreferrer">
+    <img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1223107&theme=light&t=1786865938485" alt="RollDate - A scroll-first JavaScript date picker | Product Hunt" width="250" height="54" />
+  </a>
+</p>
+
 # RollDate (`@rolldate/core`)
 
 JavaScript scrolling date picker — single / range / multi select, optional time picker (24h / 12h), light & dark themes. No framework required.
