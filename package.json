@@ -42,14 +42,18 @@
   },
   "homepage": "https://rolldate-demo.vercel.app/",
   "keywords": [
-    "calendar",
-    "datepicker",
     "date-picker",
+    "datepicker",
+    "calendar",
+    "date",
+    "javascript",
+    "typescript",
+    "ui-component",
+    "vanilla-js",
+    "frontend",
     "timepicker",
     "scroll",
-    "javascript",
-    "rolldate",
-    "typescript"
+    "rolldate"
   ],
   "author": "Abramov Yevhen <rolldate.support@gmail.com>",
   "license": "MIT",
