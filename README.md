@@ -1,5 +1,5 @@
 > **⭐ If RollDate saves you time, [star the repo](https://github.com/Abramov-Front-end/rolldate-core)** — it helps others discover it.  
-> **[Live demo](https://rolldate-demo.vercel.app/)** · **[Docs](https://rolldate-demo.vercel.app/docs.html)** · **[Issues & feedback](https://github.com/Abramov-Front-end/rolldate-core/issues)**
+> **[Live demo](https://www.rolldate.dev/)** · **[Docs](https://www.rolldate.dev/docs)** · **[Issues & feedback](https://github.com/Abramov-Front-end/rolldate-core/issues)**
 
 <p align="center">
   <a href="https://www.producthunt.com/products/rolldate?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-rolldate" target="_blank" rel="noopener noreferrer">
@@ -11,7 +11,7 @@
 
 JavaScript scrolling date picker — single / range / multi select, optional time picker (24h / 12h), light & dark themes. No framework required.
 
-**Live demo:** https://rolldate-demo.vercel.app/  
+**Live demo:** https://www.rolldate.dev/  
 **GitHub:** https://github.com/Abramov-Front-end/rolldate-core  
 **MCP** (Cursor & other AI IDEs): [`@rolldate/mcp`](https://www.npmjs.com/package/@rolldate/mcp) · [repo](https://github.com/Abramov-Front-end/rolldate-mcp)
 
@@ -141,7 +141,7 @@ new RollDate('#date-input', {
 | `setDisabledDates` / `disableDate` / `enableDate` | Disabled dates |
 | `setHighlightDates` / `highlightDate` / `unhighlightDate` | Day markers |
 
-Full API: https://rolldate-demo.vercel.app/docs
+Full API: https://www.rolldate.dev/docs
 
 ## What's new in 1.1.0
 
@@ -178,5 +178,5 @@ This repository is the **public release mirror** of `@rolldate/core`.
 Development happens in a private monorepo; releases are synced here for npm and GitHub.
 
 - npm: https://www.npmjs.com/package/@rolldate/core
-- Demo: https://rolldate-demo.vercel.app/
+- Demo: https://www.rolldate.dev/
 - MCP: https://github.com/Abramov-Front-end/rolldate-mcp

@@ -40,7 +40,7 @@
     "type": "git",
     "url": "git+https://github.com/Abramov-Front-end/rolldate-core.git"
   },
-  "homepage": "https://rolldate-demo.vercel.app/",
+  "homepage": "https://www.rolldate.dev/",
   "keywords": [
     "date-picker",
     "datepicker",

@@ -1,6 +1,6 @@
 /**
  * Type definitions for @rolldate/core
- * https://rolldate-demo.vercel.app/
+ * https://www.rolldate.dev/
  */
 
 export type RollDateTheme = 'dark' | 'light' | 'default'
