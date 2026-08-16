@@ -658,6 +658,7 @@ var RollDate = (function () {
         #touchLastTime = 0
         #touchVelocity = 0
         #momentumId = 0
+        #animId = 0
         
         constructor(body, methods = {
             dominant: () => console.error('Function "dominant" is not found'),
@@ -787,6 +788,54 @@ var RollDate = (function () {
             this.#momentumId = 0;
         }
 
+        #cancelAnimate() {
+            if (!this.#animId) return
+            cancelAnimationFrame(this.#animId);
+            this.#animId = 0;
+            this.blocked = false;
+        }
+
+        animateTo(targetOffset, opts = {}) {
+            this.#cancelMomentum();
+            this.#cancelAnimate();
+
+            const duration = opts.duration ?? 220;
+            const start = this.#offset;
+            const min = this.minScroll;
+            const target = Math.max(Math.min(targetOffset, 0), min);
+
+            if (Math.abs(target - start) < 1) {
+                this.offset = target;
+                this.dominant();
+                opts.onComplete?.();
+                return Promise.resolve()
+            }
+
+            this.blocked = true;
+            const startTime = performance.now();
+
+            return new Promise(resolve => {
+                const step = (now) => {
+                    const t = Math.min(1, (now - startTime) / duration);
+                    const eased = 1 - Math.pow(1 - t, 3);
+                    this.offset = start + (target - start) * eased;
+
+                    if (t < 1) {
+                        this.#animId = requestAnimationFrame(step);
+                        return
+                    }
+
+                    this.offset = target;
+                    this.blocked = false;
+                    this.dominant();
+                    this.#animId = 0;
+                    opts.onComplete?.();
+                    resolve();
+                };
+                this.#animId = requestAnimationFrame(step);
+            })
+        }
+
         apply() {
             this.$scroll_block.style.transform = `translateY(${this.offset + this.#baseOffset}px)`;
         }
@@ -856,6 +905,7 @@ var RollDate = (function () {
 
         destroy() {
             this.#cancelMomentum();
+            this.#cancelAnimate();
             if (this.#boundWheelHandler) {
                 this.$body.removeEventListener('wheel', this.#boundWheelHandler);
             }
@@ -1417,6 +1467,7 @@ var RollDate = (function () {
 
         #wheelHandler
         #viewNumber = 0
+        #arrowAnimating = false
         #viewPeriodNames = ['day', 'month', 'year']
         #selectedDates = []
         #firstOpen = true
@@ -1969,6 +2020,13 @@ var RollDate = (function () {
 
             const preserveScroll = options.preserveScroll === true;
             const savedOffset = preserveScroll ? this.scroll.offset : null;
+            const animateScroll = options.animate === true && Number(options.shift);
+            const onScrollComplete = typeof options.onScrollComplete === 'function'
+                ? options.onScrollComplete
+                : null;
+            const finishScroll = () => {
+                onScrollComplete?.();
+            };
 
             this.#updateHeader();
             this.scroll.blocked = false;
@@ -1999,6 +2057,7 @@ var RollDate = (function () {
                 if (blockHeight <= bodyHeight) {
                     this.scroll.setBaseOffset(bodyHeight - blockHeight);
                     this.scroll.offset = 0;
+                    finishScroll();
                     return
                 }
 
@@ -2007,6 +2066,7 @@ var RollDate = (function () {
 
                 if (preserveScroll && savedOffset != null) {
                     this.scroll.offset = Math.max(savedOffset, this.scroll.minScroll);
+                    finishScroll();
                     return
                 }
 
@@ -2025,12 +2085,29 @@ var RollDate = (function () {
                     $firstEl = this.$container.querySelector(fallbacks[this.period]);
                 }
 
-                if (!$firstEl) return
+                if (!$firstEl) {
+                    finishScroll();
+                    return
+                }
 
                 const containerRect = $scrollBlock.getBoundingClientRect();
                 const firstRect = $firstEl.getBoundingClientRect();
                 const firstRectOffset = -(firstRect.top - containerRect.top);
-                this.scroll.offset = Math.max(firstRectOffset, this.scroll.minScroll);
+                const targetOffset = Math.max(firstRectOffset, this.scroll.minScroll);
+
+                if (animateScroll) {
+                    const slide = Math.min(bodyHeight * 0.38, 140);
+                    const startOffset = Math.max(
+                        Math.min(targetOffset + (options.shift > 0 ? slide : -slide), 0),
+                        this.scroll.minScroll
+                    );
+                    this.scroll.offset = startOffset;
+                    this.scroll.animateTo(targetOffset, { onComplete: finishScroll });
+                    return
+                }
+
+                this.scroll.offset = targetOffset;
+                finishScroll();
             };
 
             setTimeout(applyScroll, 0);
@@ -2291,6 +2368,8 @@ var RollDate = (function () {
                     e.preventDefault();
                     e.stopPropagation();
 
+                    if (this.#arrowAnimating) return
+
                     const direction = e.currentTarget?.dataset?.direction;
                     if (direction !== 'prev' && direction !== 'next') return
                     const shift = direction === 'prev' ? -1 : 1;
@@ -2327,8 +2406,15 @@ var RollDate = (function () {
                         this.data.current_decade = targetDecade;
                     }
 
+                    this.#arrowAnimating = true;
                     hapticTick(this.options.hapticFeedback !== false);
-                    this.#updateView(this.#viewNumber);
+                    this.#updateView(this.#viewNumber, {
+                        animate: true,
+                        shift,
+                        onScrollComplete: () => {
+                            this.#arrowAnimating = false;
+                        }
+                    });
                 });
             });
         }

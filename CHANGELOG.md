@@ -2,6 +2,17 @@
 
 All notable changes to `@rolldate/core` are documented here.
 
+## [1.1.4] — 2026-08-16
+
+### Added
+
+- **Animated arrow navigation** — smooth slide when using prev/next header buttons (day / month / year views)
+
+### Changed
+
+- **README** — Product Hunt as a text link instead of an embed badge
+- **Homepage & docs** — official site at [rolldate.dev](https://rolldate.dev/)
+
 ## [1.1.3] — 2026-08-14
 
 ### Added

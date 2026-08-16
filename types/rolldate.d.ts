@@ -1,6 +1,6 @@
 /**
  * Type definitions for @rolldate/core
- * https://www.rolldate.dev/
+ * https://rolldate.dev/
  */
 
 export type RollDateTheme = 'dark' | 'light' | 'default'
