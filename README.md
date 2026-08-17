@@ -1,11 +1,11 @@
 > **⭐ If RollDate saves you time, [star the repo](https://github.com/Abramov-Front-end/rolldate-core)** — it helps others discover it.  
-> **[Live demo](https://rolldate.dev/)** · **[Docs](https://rolldate.dev/docs)** · **[Product Hunt](https://www.producthunt.com/products/rolldate?launch=rolldate)** · **[Issues & feedback](https://github.com/Abramov-Front-end/rolldate-core/issues)**
+> **[Live demo](https://www.rolldate.dev/)** · **[Docs](https://www.rolldate.dev/docs)** · **[Product Hunt](https://www.producthunt.com/products/rolldate?launch=rolldate)** · **[Issues & feedback](https://github.com/Abramov-Front-end/rolldate-core/issues)**
 
 # RollDate (`@rolldate/core`)
 
 JavaScript scrolling date picker — single / range / multi select, optional time picker (24h / 12h), **main** / dark / light themes. No framework required.
 
-**Live demo:** https://rolldate.dev/  
+**Live demo:** https://www.rolldate.dev/  
 **GitHub:** https://github.com/Abramov-Front-end/rolldate-core  
 **MCP** (Cursor & other AI IDEs): [`@rolldate/mcp`](https://www.npmjs.com/package/@rolldate/mcp) · [repo](https://github.com/Abramov-Front-end/rolldate-mcp)
 
@@ -22,7 +22,7 @@ JavaScript scrolling date picker — single / range / multi select, optional tim
 - **Date + time** — side panel or bottom bar with scrollable rolls; 12h AM/PM toggle; `timePosition: 'right' | 'bottom'`
 - **Popup or inline** — attach to an input or render inside any container
 - **Three themes** — `main` (default), `dark`, `light` — no extra CSS framework
-- **Small footprint** — ~52 KB minified JS (~13 KB gzip); no React/Vue/jQuery dependency
+- **Small footprint** — ~54 KB minified JS (~14 KB gzip); no React/Vue/jQuery dependency
 - **Runtime API** — open/close, disable dates, highlights, range presets, `goToDate`, `getValue` / `setValue`
 
 ## Install
@@ -138,14 +138,23 @@ new RollDate('#date-input', {
 | `setDisabledDates` / `disableDate` / `enableDate` | Disabled dates |
 | `setHighlightDates` / `highlightDate` / `unhighlightDate` | Day markers |
 
-Full API: https://rolldate.dev/docs
+Full API: https://www.rolldate.dev/docs
+
+## What's new in 1.2
+
+- **`main` theme** — new default look (blue accent); calendar + time side by side on desktop
+- **Redesigned time picker** — scrollable hour/minute rolls with AM/PM segmented toggle (no separate time readout)
+- **`timePosition: 'right' | 'bottom'`** — time beside the calendar or below it; on mobile (≤640px) always below
+- **`footerButtons[].variant`** — `'primary'` | `'secondary'` for styled footer actions
+- **Layout polish** — calendar width unchanged when time is on the right; footer separator only when footer buttons are set
+- **README demo GIF** — updated playground preview (themes, time, generated code)
+
+See [CHANGELOG.md](./CHANGELOG.md) for 1.2.0 / 1.2.1 details and earlier releases.
 
 ## What's new in 1.1.4
 
 - Smooth animated navigation when clicking calendar prev/next arrows
-- Official site and docs at https://rolldate.dev/
-
-See [CHANGELOG.md](./CHANGELOG.md) for earlier releases.
+- Official site and docs at https://www.rolldate.dev/
 
 ## What's new in 1.1.0
 

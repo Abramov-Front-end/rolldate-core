@@ -24,6 +24,12 @@ All notable changes to `@rolldate/core` are documented here.
 - **Bottom / mobile time** — 3 visible values; rolls and AM/PM in one row
 - Calendar navigation stays within the calendar column when time is shown beside it
 - Separator between calendar and time panel uses margin (calendar width unchanged)
+- Footer border appears only when **`footerButtons`** are configured (no empty separator with time-only layout)
+- Removed **`timeLabel`** option and separate time readout block
+
+### Removed
+
+- **`timeLabel`** — use scrollable rolls + AM/PM toggle instead
 
 ## [1.1.4] — 2026-08-16
 
