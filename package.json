@@ -3,7 +3,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "RollDate — scrolling date picker with range/multi select, highlighted dates, time picker, and main/dark/light themes",
   "main": "dist/js/rolldate.min.js",
   "types": "dist/js/rolldate.d.ts",

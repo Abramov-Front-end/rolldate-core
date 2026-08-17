@@ -2,6 +2,12 @@
 
 All notable changes to `@rolldate/core` are documented here.
 
+## [1.2.1] — 2026-08-17
+
+### Changed
+
+- Updated README demo GIF (playground preview with themes, time, and generated code)
+
 ## [1.2.0] — 2026-08-17
 
 ### Added

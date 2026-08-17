@@ -454,7 +454,7 @@ var RollDate = (function () {
                 ? options.weekDays
                 : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             this.enableTime = Boolean(options.enableTime);
-            this.hasFooter = Boolean(options.enableTime || (options.footerButtons && options.footerButtons.length));
+            this.hasFooter = Boolean(options.footerButtons && options.footerButtons.length);
 
             this.init();
         }
@@ -1977,7 +1977,7 @@ var RollDate = (function () {
                 const timePosition = this.options.timePosition === 'bottom' ? 'bottom' : 'right';
                 this.$container.classList.add(`RollDate__time-position_${timePosition}`);
             }
-            if (this.options.footerButtons?.length || this.options.enableTime) {
+            if (this.options.footerButtons?.length) {
                 this.$container.classList.add('RollDate__has-footer');
             }
 
