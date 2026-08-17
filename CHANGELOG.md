@@ -2,6 +2,13 @@
 
 All notable changes to `@rolldate/core` are documented here.
 
+## [1.2.2] — 2026-08-17
+
+### Changed
+
+- **README** — added “What's new in 1.2” section; updated bundle size and www.rolldate.dev links
+- **CHANGELOG** — expanded 1.2.0 notes (footer separator, removed `timeLabel`)
+
 ## [1.2.1] — 2026-08-17
 
 ### Changed
