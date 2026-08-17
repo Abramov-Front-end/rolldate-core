@@ -3,7 +3,7 @@
  * https://rolldate.dev/
  */
 
-export type RollDateTheme = 'dark' | 'light' | 'default'
+export type RollDateTheme = 'main' | 'dark' | 'light' | 'default'
 export type RollDateSelectType = 'single' | 'range' | 'multi'
 export type RollDatePeriod = 'day' | 'month' | 'year'
 export type RollDateDateLike = string | Date
@@ -11,6 +11,8 @@ export type RollDateDateLike = string | Date
 export interface RollDateFooterButton {
   /** Button label */
   text: string
+  /** Visual style */
+  variant?: 'primary' | 'secondary'
   /** Built-in action */
   action?: 'today' | 'clear'
   /** Custom click handler; receives the picker instance */
@@ -63,6 +65,8 @@ export interface RollDateOptions {
   weekDaysNames?: string[]
   enableTime?: boolean
   use12Hour?: boolean
+  /** Time picker placement on desktop: right (default) or bottom. Always bottom below 640px. */
+  timePosition?: 'right' | 'bottom'
   /** Minute step for the time picker (e.g. 5 → 00, 05, 10…) */
   timeStep?: number
   /** Tick feedback on month/year/decade/time changes */

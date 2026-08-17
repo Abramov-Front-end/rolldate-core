@@ -3,35 +3,60 @@
   flex-direction: column;
   padding: 6px 11px;
   width: 360px;
-  --rd-bg: #323232;
-  --rd-border: #626262;
-  --rd-text-primary: #e6e6e6;
-  --rd-text-secondary: #848685;
-  --rd-text-disabled: #515252;
-  --rd-text-disabled-contrast: #a2a2a2;
-  --rd-header-muted: #848685;
-  --rd-weekday: #f7f7f7;
-  --rd-hover-bg: #3e3e3e;
-  --rd-hover-border: #686868;
-  --rd-accent: #609ef1;
-  --rd-accent-strong: #368cfd;
-  --rd-accent-dark: #1e5093;
-  --rd-accent-muted: #375985;
+  --rd-time-panel-w: 168px;
+  --rd-time-separator-gap: 11px;
+  --rd-time-item-h: 32px;
+  --rd-time-visible: 3;
+  --rd-bg: #232830;
+  --rd-border: #343b48;
+  --rd-text-primary: #f1f5f9;
+  --rd-text-secondary: #94a3b8;
+  --rd-text-disabled: #4b5563;
+  --rd-text-disabled-contrast: #64748b;
+  --rd-header-muted: #94a3b8;
+  --rd-weekday: #cbd5e1;
+  --rd-hover-bg: #2d3544;
+  --rd-hover-border: #475569;
+  --rd-accent: #60a5fa;
+  --rd-accent-strong: #2563eb;
+  --rd-accent-dark: #1d4ed8;
+  --rd-accent-muted: rgba(37, 99, 235, 0.18);
   --rd-range: #a78bfa;
   --rd-range-strong: #7c3aed;
   --rd-range-muted: #3d3558;
-  --rd-button-icon: #fff;
+  --rd-button-icon: #cbd5e1;
   background: var(--rd-bg);
   border: 1px solid var(--rd-border);
   box-sizing: border-box;
   font-family: "Segoe UI", Arial, sans-serif;
   overscroll-behavior: contain;
-  border-radius: 8px;
+  border-radius: 12px;
 }
 .RollDate__container * {
   box-sizing: border-box;
 }
+.RollDate__container.RollDate__theme_main {
+  --rd-bg: #232830;
+  --rd-border: #343b48;
+  --rd-text-primary: #f1f5f9;
+  --rd-text-secondary: #94a3b8;
+  --rd-text-disabled: #4b5563;
+  --rd-text-disabled-contrast: #64748b;
+  --rd-header-muted: #94a3b8;
+  --rd-weekday: #cbd5e1;
+  --rd-hover-bg: #2d3544;
+  --rd-hover-border: #475569;
+  --rd-accent: #60a5fa;
+  --rd-accent-strong: #2563eb;
+  --rd-accent-dark: #1d4ed8;
+  --rd-accent-muted: rgba(37, 99, 235, 0.18);
+  --rd-range: #a78bfa;
+  --rd-range-strong: #7c3aed;
+  --rd-range-muted: #3d3558;
+  --rd-button-icon: #cbd5e1;
+}
 .RollDate__container.RollDate__theme_dark {
+  --rd-time-item-h: 28px;
   --rd-bg: #323232;
   --rd-border: #626262;
   --rd-text-primary: #e6e6e6;
@@ -51,7 +76,23 @@
   --rd-range-muted: #3d3558;
   --rd-button-icon: #fff;
 }
+.RollDate__container.RollDate__theme_dark .RollDate__time__viewport::before {
+  border-color: var(--rd-hover-border);
+  background: var(--rd-hover-bg);
+}
+.RollDate__container.RollDate__theme_dark .RollDate__time__item--active {
+  color: var(--rd-text-primary);
+}
+.RollDate__container.RollDate__theme_dark .RollDate__time__segment-btn--active {
+  background: var(--rd-hover-border);
+  color: var(--rd-text-primary);
+}
+.RollDate__container.RollDate__theme_dark .RollDate__time__segmented {
+  border-color: var(--rd-hover-border);
+  background: var(--rd-hover-bg);
+}
 .RollDate__container.RollDate__theme_light {
+  --rd-time-item-h: 28px;
   --rd-bg: #ffffff;
   --rd-border: #d8dde6;
   --rd-text-primary: #1f2937;
@@ -70,6 +111,21 @@
   --rd-range-strong: #6d28d9;
   --rd-range-muted: #ede9fe;
   --rd-button-icon: #334155;
+}
+.RollDate__container.RollDate__theme_light .RollDate__time__viewport::before {
+  border-color: var(--rd-hover-border);
+  background: var(--rd-hover-bg);
+}
+.RollDate__container.RollDate__theme_light .RollDate__time__item--active {
+  color: var(--rd-text-primary);
+}
+.RollDate__container.RollDate__theme_light .RollDate__time__segment-btn--active {
+  background: var(--rd-hover-border);
+  color: var(--rd-text-primary);
+}
+.RollDate__container.RollDate__theme_light .RollDate__time__segmented {
+  border-color: var(--rd-hover-border);
+  background: var(--rd-hover-bg);
 }
 .RollDate__container.RollDate__calendar__type--days .RollDate__calendar__header {
   display: flex;
@@ -105,6 +161,75 @@
 .RollDate__container.RollDate__calendar__type--years .RollDate__header__year, .RollDate__container.RollDate__calendar__type--years .RollDate__header__month {
   color: var(--rd-header-muted);
 }
+.RollDate__container.RollDate__has-time .RollDate__time-separator {
+  flex-shrink: 0;
+  background: var(--rd-border);
+}
+.RollDate__container.RollDate__has-time.RollDate__time-position_right {
+  --rd-time-visible: 5;
+  width: calc(360px + var(--rd-time-separator-gap) * 2 + 1px + var(--rd-time-panel-w));
+}
+.RollDate__container.RollDate__has-time.RollDate__time-position_right .RollDate__content {
+  flex-direction: row;
+  align-items: stretch;
+}
+.RollDate__container.RollDate__has-time.RollDate__time-position_right .RollDate__calendar {
+  flex: 0 0 338px;
+  width: 338px;
+  min-width: 338px;
+  max-width: 338px;
+}
+.RollDate__container.RollDate__has-time.RollDate__time-position_right .RollDate__time-separator {
+  flex: 0 0 1px;
+  width: 1px;
+  margin: 0 var(--rd-time-separator-gap);
+  align-self: stretch;
+}
+.RollDate__container.RollDate__has-time.RollDate__time-position_right .RollDate__time-panel {
+  flex: 0 0 var(--rd-time-panel-w);
+  width: var(--rd-time-panel-w);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  padding: 8px 6px;
+}
+.RollDate__container.RollDate__has-time.RollDate__time-position_bottom {
+  --rd-time-visible: 3;
+}
+.RollDate__container.RollDate__has-time.RollDate__time-position_bottom .RollDate__content {
+  flex-direction: column;
+}
+.RollDate__container.RollDate__has-time.RollDate__time-position_bottom .RollDate__calendar {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  max-width: none;
+}
+.RollDate__container.RollDate__has-time.RollDate__time-position_bottom .RollDate__time-separator {
+  flex: 0 0 auto;
+  width: auto;
+  height: 1px;
+  margin: var(--rd-time-separator-gap) 0;
+  align-self: stretch;
+}
+.RollDate__container.RollDate__has-time.RollDate__time-position_bottom .RollDate__time-panel {
+  flex: 0 0 auto;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 4px 4px;
+}
+.RollDate__container.RollDate__has-time.RollDate__time-position_bottom .RollDate__time {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+.RollDate__container.RollDate__has-time.RollDate__time-position_bottom .RollDate__time__period {
+  width: auto;
+  max-width: none;
+}
 .RollDate__header {
   flex: 0 0 auto;
   display: flex;
@@ -128,7 +253,10 @@
   flex: 1 0 auto;
   display: flex;
   flex-direction: column;
-  height: 283px;
+  min-width: 0;
+}
+.RollDate__calendar > .RollDate__header {
+  flex: 0 0 auto;
 }
 .RollDate__calendar__switcher {
   display: flex;
@@ -158,7 +286,9 @@
   font-size: 12px;
 }
 .RollDate__calendar__body {
-  flex: 1 0 0;
+  flex: 0 0 251px;
+  height: 251px;
+  min-height: 251px;
   overflow: hidden;
   touch-action: none;
 }
@@ -384,6 +514,15 @@
   border-color: var(--rd-range);
   background: var(--rd-range-muted);
 }
+.RollDate__content {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.RollDate__time-panel {
+  flex: 0 0 auto;
+}
 .RollDate__footer {
   flex: 0 0 auto;
   margin-top: 10px;
@@ -403,108 +542,123 @@
   border: 1px solid var(--rd-border);
   background: var(--rd-hover-bg);
   color: var(--rd-text-primary);
-  border-radius: 6px;
-  padding: 7px 12px;
+  border-radius: 8px;
+  padding: 8px 16px;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s, border-color 0.2s;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
 }
 .RollDate__footer__button:hover {
   border-color: var(--rd-accent);
   background: var(--rd-accent-muted);
 }
+.RollDate__footer__button--secondary {
+  border-color: var(--rd-border);
+  background: var(--rd-hover-bg);
+  color: var(--rd-text-primary);
+}
+.RollDate__footer__button--secondary:hover {
+  border-color: var(--rd-hover-border);
+  background: var(--rd-hover-bg);
+  color: var(--rd-text-primary);
+}
+.RollDate__footer__button--primary {
+  border-color: transparent;
+  background: var(--rd-accent-strong);
+  color: #fff;
+}
+.RollDate__footer__button--primary:hover {
+  border-color: transparent;
+  background: var(--rd-accent);
+  color: #fff;
+}
 .RollDate__time {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 4px 0 2px;
+  gap: 8px;
   user-select: none;
+  width: 100%;
+}
+.RollDate__time:not(.RollDate__time--12h) .RollDate__time__period {
+  display: none;
+}
+.RollDate__time__period {
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: 118px;
+}
+.RollDate__time__segmented {
+  display: flex;
+  border: 1.5px solid var(--rd-accent-strong);
+  border-radius: 8px;
+  padding: 2px;
+  background: var(--rd-accent-muted);
+  gap: 2px;
+  height: var(--rd-time-item-h, 28px);
+  box-sizing: border-box;
+  align-items: stretch;
+  width: 100%;
+}
+.RollDate__time__segment-btn {
+  flex: 1 1 0;
+  min-width: 30px;
+  border: none;
+  background: transparent;
+  color: var(--rd-text-secondary);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.RollDate__time__segment-btn--active {
+  background: var(--rd-accent-strong);
+  color: #fff;
 }
 .RollDate__time__picker {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 4px;
-  flex: 1 1 auto;
-  min-width: 0;
-}
-.RollDate__time__display {
   flex: 0 0 auto;
-  font-size: 17px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: var(--rd-text-primary);
-  letter-spacing: 0.03em;
-  line-height: 1;
-  padding: 6px 10px;
-  border-left: 1px solid var(--rd-border);
-  min-width: 4.5em;
-  text-align: center;
+  min-width: 0;
 }
 .RollDate__time__field {
   flex: 0 0 auto;
   width: auto;
 }
-.RollDate__time__field--period .RollDate__time__viewport {
-  width: 40px;
-}
 .RollDate__time__column {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: center;
-  gap: 2px;
-}
-.RollDate__time__arrow {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 84px;
-  padding: 0;
-  border: none;
-  border-radius: 4px;
-  background: none;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: opacity 0.2s;
-}
-.RollDate__time__arrow svg {
-  width: 7px;
-  height: 6px;
-  fill: var(--rd-text-secondary);
-  transition: fill 0.2s;
-}
-.RollDate__time__arrow:hover svg {
-  fill: var(--rd-text-primary);
-}
-.RollDate__time__arrow--prev svg {
-  transform: rotate(-90deg);
-}
-.RollDate__time__arrow--next svg {
-  transform: rotate(90deg);
 }
 .RollDate__time__viewport {
   position: relative;
-  width: 46px;
-  height: 84px;
+  width: 52px;
+  height: calc(var(--rd-time-item-h, 28px) * var(--rd-time-visible, 3));
   overflow: hidden;
-  border-radius: 4px;
+  border-radius: 8px;
   touch-action: none;
 }
 .RollDate__time__viewport::before {
   content: "";
   position: absolute;
-  left: 0;
-  right: 0;
+  left: 4px;
+  right: 4px;
   top: 50%;
   transform: translateY(-50%);
-  height: 28px;
-  border: 2px solid var(--rd-hover-border);
-  border-radius: 4px;
-  background: transparent;
+  height: var(--rd-time-item-h, 28px);
+  border: 1.5px solid var(--rd-accent-strong);
+  border-radius: 8px;
+  background: var(--rd-accent-muted);
   pointer-events: none;
   z-index: 2;
   box-sizing: border-box;
@@ -514,85 +668,90 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  z-index: 1;
-  background: linear-gradient(to bottom, var(--rd-bg) 0%, transparent 32%, transparent 68%, var(--rd-bg) 100%);
+  z-index: 4;
+  background: linear-gradient(to bottom, var(--rd-bg) 0%, transparent 28%, transparent 72%, var(--rd-bg) 100%);
 }
 .RollDate__time__list {
   will-change: transform;
   position: relative;
-  z-index: 0;
+  z-index: 3;
 }
 .RollDate__time__item {
-  height: 28px;
+  height: var(--rd-time-item-h, 28px);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 14px;
   font-weight: 600;
   color: var(--rd-text-disabled);
-  transition: color 0.15s ease, font-size 0.15s ease;
+  cursor: pointer;
+  transition: color 0.15s ease, opacity 0.15s ease;
 }
 .RollDate__time__item--active {
-  color: var(--rd-text-primary);
+  color: var(--rd-accent-strong);
   font-size: 15px;
   font-weight: 700;
 }
 .RollDate__time__sep {
   font-size: 20px;
   font-weight: 700;
-  color: var(--rd-text-primary);
+  color: var(--rd-text-secondary);
   line-height: 1;
-  padding-bottom: 2px;
   align-self: center;
   margin-top: 0;
 }
-.RollDate__time--12h {
-  flex-wrap: wrap;
-  gap: 6px;
-  padding-top: 2px;
+.RollDate__theme_main .RollDate__calendar__day--today:not(.RollDate__calendar__day--range-first):not(.RollDate__calendar__day--range-last):not(.RollDate__calendar__day--range-selected) {
+  background: var(--rd-accent-strong);
+  color: #fff;
+  border-color: transparent;
 }
-.RollDate__time--12h .RollDate__time__display {
-  order: -1;
-  width: 100%;
-  flex: 1 1 100%;
-  border-left: none;
-  padding: 0 0 4px;
-  min-width: 0;
-  font-size: 22px;
-  letter-spacing: 0.04em;
-}
-.RollDate__time--12h .RollDate__time__picker {
-  width: 100%;
-  flex: 1 1 100%;
-  justify-content: center;
-  gap: 2px;
-}
-.RollDate__time--12h .RollDate__time__arrow {
-  width: 18px;
-}
-.RollDate__time--12h .RollDate__time__viewport {
-  width: 42px;
-}
-.RollDate__time--12h .RollDate__time__field--period .RollDate__time__viewport {
-  width: 36px;
-}
-.RollDate__time--12h .RollDate__time__sep {
-  font-size: 18px;
-}
-.RollDate__has-footer .RollDate__calendar {
-  height: 260px;
-}
-.RollDate__has-time .RollDate__calendar {
-  height: 258px;
-}
-.RollDate__has-footer.RollDate__has-time .RollDate__calendar {
-  height: 230px;
+.RollDate__theme_main .RollDate__calendar__day--today:not(.RollDate__calendar__day--range-first):not(.RollDate__calendar__day--range-last):not(.RollDate__calendar__day--range-selected):hover {
+  background: var(--rd-accent);
+  border-color: transparent;
 }
 
-@media (max-width: 380px) {
+@media (max-width: 640px) {
   .RollDate__container {
     width: min(100vw - 16px, 360px);
     padding: 6px 8px;
+    --rd-time-item-h: 28px;
+  }
+  .RollDate__container.RollDate__has-time.RollDate__time-position_right, .RollDate__container.RollDate__has-time.RollDate__time-position_bottom {
+    --rd-time-visible: 3;
+    width: min(100vw - 16px, 360px);
+  }
+  .RollDate__container.RollDate__has-time.RollDate__time-position_right .RollDate__content, .RollDate__container.RollDate__has-time.RollDate__time-position_bottom .RollDate__content {
+    flex-direction: column;
+  }
+  .RollDate__container.RollDate__has-time.RollDate__time-position_right .RollDate__calendar, .RollDate__container.RollDate__has-time.RollDate__time-position_bottom .RollDate__calendar {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+  }
+  .RollDate__container.RollDate__has-time.RollDate__time-position_right .RollDate__time-separator, .RollDate__container.RollDate__has-time.RollDate__time-position_bottom .RollDate__time-separator {
+    flex: 0 0 auto;
+    width: auto;
+    height: 1px;
+    margin: var(--rd-time-separator-gap) 0;
+    align-self: stretch;
+  }
+  .RollDate__container.RollDate__has-time.RollDate__time-position_right .RollDate__time-panel, .RollDate__container.RollDate__has-time.RollDate__time-position_bottom .RollDate__time-panel {
+    flex: 0 0 auto;
+    width: 100%;
+    padding: 8px 4px 4px;
+  }
+  .RollDate__container.RollDate__has-time.RollDate__time-position_right .RollDate__time, .RollDate__container.RollDate__has-time.RollDate__time-position_bottom .RollDate__time {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+  .RollDate__container.RollDate__has-time.RollDate__time-position_right .RollDate__time__period, .RollDate__container.RollDate__has-time.RollDate__time-position_bottom .RollDate__time__period {
+    width: auto;
+    max-width: none;
+  }
+  .RollDate__container.RollDate__has-time.RollDate__time-position_right .RollDate__time__viewport, .RollDate__container.RollDate__has-time.RollDate__time-position_bottom .RollDate__time__viewport {
+    width: 48px;
   }
   .RollDate__header {
     margin-bottom: 8px;
@@ -601,8 +760,10 @@
   .RollDate__header__year, .RollDate__header__month {
     font-size: 13px;
   }
-  .RollDate__calendar {
-    height: 268px;
+  .RollDate__calendar__body {
+    flex: 0 0 226px;
+    height: 226px;
+    min-height: 226px;
   }
   .RollDate__calendar__header {
     margin-bottom: 6px;

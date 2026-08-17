@@ -2,6 +2,23 @@
 
 All notable changes to `@rolldate/core` are documented here.
 
+## [1.2.0] — 2026-08-17
+
+### Added
+
+- **`main` theme** — new default visual theme (blue accent, side-by-side calendar + time on desktop)
+- **`timePosition`** — `'right'` (default) or `'bottom'`; mobile always stacks time below the calendar (≤640px)
+- **Time picker redesign** — scrollable hour/minute rolls with AM/PM segmented toggle; no separate time readout block
+- **`footerButtons[].variant`** — `'primary'` | `'secondary'` for themed footer actions
+
+### Changed
+
+- Default **`theme`** is `'main'` (`'default'` alias maps to `'main'`)
+- **Right panel time** — 5 visible roll values; AM/PM toggle below rolls
+- **Bottom / mobile time** — 3 visible values; rolls and AM/PM in one row
+- Calendar navigation stays within the calendar column when time is shown beside it
+- Separator between calendar and time panel uses margin (calendar width unchanged)
+
 ## [1.1.4] — 2026-08-16
 
 ### Added

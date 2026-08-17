@@ -3,7 +3,7 @@
 
 # RollDate (`@rolldate/core`)
 
-JavaScript scrolling date picker — single / range / multi select, optional time picker (24h / 12h), light & dark themes. No framework required.
+JavaScript scrolling date picker — single / range / multi select, optional time picker (24h / 12h), **main** / dark / light themes. No framework required.
 
 **Live demo:** https://rolldate.dev/  
 **GitHub:** https://github.com/Abramov-Front-end/rolldate-core  
@@ -19,9 +19,9 @@ JavaScript scrolling date picker — single / range / multi select, optional tim
 
 - **Scroll-first UX** — wheel-style day/month/year and time columns; smooth on desktop and mobile
 - **One picker, three modes** — single date, range, or multi-select without swapping libraries
-- **Date + time** — optional footer time picker (24h or 12h AM/PM), configurable minute step
+- **Date + time** — side panel or bottom bar with scrollable rolls; 12h AM/PM toggle; `timePosition: 'right' | 'bottom'`
 - **Popup or inline** — attach to an input or render inside any container
-- **Light & dark** — built-in themes, no extra CSS framework
+- **Three themes** — `main` (default), `dark`, `light` — no extra CSS framework
 - **Small footprint** — ~52 KB minified JS (~13 KB gzip); no React/Vue/jQuery dependency
 - **Runtime API** — open/close, disable dates, highlights, range presets, `goToDate`, `getValue` / `setValue`
 
@@ -59,7 +59,7 @@ npm install @rolldate/core
 import '@rolldate/core/css/min';
 import RollDate from '@rolldate/core';
 
-new RollDate('#date-input', { theme: 'dark' });
+new RollDate('#date-input', { theme: 'main' });
 ```
 
 CSS path aliases: `@rolldate/core/css`, `@rolldate/core/css/min`, `@rolldate/core/styles`.
@@ -71,9 +71,11 @@ import RollDate from '@rolldate/core';
 import type { RollDateOptions } from '@rolldate/core';
 
 const options: RollDateOptions = {
-  theme: 'dark',
+  theme: 'main',
   selectType: 'range',
   enableTime: true,
+  use12Hour: true,
+  timePosition: 'right',
 };
 
 new RollDate('#date', options);
@@ -85,10 +87,11 @@ Definitions ship with the package (`dist/js/rolldate.d.ts`).
 
 ```js
 new RollDate('#date-input', {
-  theme: 'dark',          // 'light'
+  theme: 'main',          // 'dark' | 'light'
   selectType: 'single',   // 'range' | 'multi'
   enableTime: true,
-  use12Hour: false,
+  use12Hour: true,
+  timePosition: 'right',  // 'bottom' — mobile always bottom
   timeStep: 5,
   minDate: '01.01.2020',
   maxDate: '31.12.2030',

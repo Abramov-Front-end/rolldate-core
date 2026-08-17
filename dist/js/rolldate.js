@@ -460,43 +460,49 @@ var RollDate = (function () {
         }
 
         init() {
+            const timePanelHtml = this.enableTime
+                ? '<div class="RollDate__time-separator" aria-hidden="true"></div><div class="RollDate__time-panel"><div class="RollDate__time"></div></div>'
+                : '';
+
             const footerHtml = this.hasFooter ? `
             <div class="RollDate__footer">
-                ${this.enableTime ? '<div class="RollDate__time"></div>' : ''}
                 <div class="RollDate__footer__buttons"></div>
             </div>
         ` : '';
 
             this.$container.innerHTML = `
-            <div class="RollDate__header">
-                <div class="RollDate__calendar__switcher">
-                    <div class="RollDate__header__year"></div>
-                    <div class="RollDate__header__month"></div>
+            <div class="RollDate__content">
+              <div class="RollDate__calendar">
+                <div class="RollDate__header">
+                    <div class="RollDate__calendar__switcher">
+                        <div class="RollDate__header__year"></div>
+                        <div class="RollDate__header__month"></div>
+                    </div>
+                    <div class="RollDate__calendar__buttons">
+                        <button class="RollDate__calendar__button" data-direction="prev">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 61 55" width="55" height="50">
+                                <path id="Форма 2" fill-rule="evenodd" class="s0" d="m52.76 54.67l-44.73 0.12c-6.16 0.02-10.02-6.64-6.96-11.98l22.26-38.79c3.07-5.35 10.76-5.37 13.86-0.04l22.47 38.67c3.09 5.33-0.74 12.01-6.9 12.02z"/>
+                            </svg>
+                        </button>
+                        <button class="RollDate__calendar__button" data-direction="next">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 61 55" width="55" height="50">
+                                <path id="Форма 2" fill-rule="evenodd" class="s0" d="m52.76 54.67l-44.73 0.12c-6.16 0.02-10.02-6.64-6.96-11.98l22.26-38.79c3.07-5.35 10.76-5.37 13.86-0.04l22.47 38.67c3.09 5.33-0.74 12.01-6.9 12.02z" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
-                <div class="RollDate__calendar__buttons">
-                    <button class="RollDate__calendar__button" data-direction="prev">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 61 55" width="55" height="50">
-                            <path id="Форма 2" fill-rule="evenodd" class="s0" d="m52.76 54.67l-44.73 0.12c-6.16 0.02-10.02-6.64-6.96-11.98l22.26-38.79c3.07-5.35 10.76-5.37 13.86-0.04l22.47 38.67c3.09 5.33-0.74 12.01-6.9 12.02z"/>
-                        </svg>
-                    </button>
-                    <button class="RollDate__calendar__button" data-direction="next">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 61 55" width="55" height="50">
-                            <path id="Форма 2" fill-rule="evenodd" class="s0" d="m52.76 54.67l-44.73 0.12c-6.16 0.02-10.02-6.64-6.96-11.98l22.26-38.79c3.07-5.35 10.76-5.37 13.86-0.04l22.47 38.67c3.09 5.33-0.74 12.01-6.9 12.02z" />
-                        </svg>
-                    </button>
+                <div class="RollDate__calendar__header">
+                  ${this.#dayHeaders()}
                 </div>
-            </div>
-            <div class="RollDate__calendar">
-              <div class="RollDate__calendar__header">
-                ${this.#dayHeaders()}
+                <div class="RollDate__calendar__body">
+                  <div class="RollDate__calendar__scrollblock">
+                      <div class="RollDate__calendar__days"></div>
+                      <div class="RollDate__calendar__months"></div>
+                      <div class="RollDate__calendar__years"></div>
+                  </div>
+                </div>
               </div>
-              <div class="RollDate__calendar__body">
-                <div class="RollDate__calendar__scrollblock">
-                    <div class="RollDate__calendar__days"></div>
-                    <div class="RollDate__calendar__months"></div>
-                    <div class="RollDate__calendar__years"></div>
-                </div>
-              </div>
+              ${timePanelHtml}
             </div>
             ${footerHtml}
         `;
@@ -1162,11 +1168,8 @@ var RollDate = (function () {
         }
     }
 
-    const ITEM_HEIGHT = 28;
-
-    const ARROW_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 61 55" width="55" height="50" aria-hidden="true">
-    <path fill-rule="evenodd" d="m52.76 54.67l-44.73 0.12c-6.16 0.02-10.02-6.64-6.96-11.98l22.26-38.79c3.07-5.35 10.76-5.37 13.86-0.04l22.47 38.67c3.09 5.33-0.74 12.01-6.9 12.02z"/>
-</svg>`;
+    const DEFAULT_ITEM_HEIGHT = 28;
+    const DEFAULT_VISIBLE = 3;
 
     class TimePicker {
         #hours = 0
@@ -1175,7 +1178,6 @@ var RollDate = (function () {
         #period = 'AM'
         #minuteStep = 1
         #columns = []
-        #displayEl = null
 
         constructor(root, options = {}) {
             this.root = root;
@@ -1209,7 +1211,83 @@ var RollDate = (function () {
             return Math.min(59, Math.max(0, Number.isNaN(m) ? 0 : m))
         }
 
+        #readMetrics(viewport) {
+            const container = viewport.closest('.RollDate__container');
+            const cs = container ? getComputedStyle(container) : getComputedStyle(viewport);
+            const itemH = parseFloat(cs.getPropertyValue('--rd-time-item-h')) || DEFAULT_ITEM_HEIGHT;
+            const visible = parseInt(cs.getPropertyValue('--rd-time-visible'), 10) || DEFAULT_VISIBLE;
+            const pad = Math.floor((visible - 1) / 2) * itemH;
+            return { itemH, visible, pad }
+        }
+
         #build() {
+            this.root.innerHTML = `
+            <div class="RollDate__time__picker"></div>
+            <div class="RollDate__time__period">
+                <div class="RollDate__time__segmented RollDate__time__segmented--period" data-role="period">
+                    <button type="button" class="RollDate__time__segment-btn" data-period="AM">AM</button>
+                    <button type="button" class="RollDate__time__segment-btn" data-period="PM">PM</button>
+                </div>
+            </div>
+        `;
+
+            if (this.#use12Hour) {
+                this.root.classList.add('RollDate__time--12h');
+            }
+            this.#bindToolbar();
+            this.#buildPickerColumns();
+            this.#syncToolbar();
+        }
+
+        #bindToolbar() {
+            this.root.querySelector('[data-role="period"]')?.addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-period]');
+                if (!btn || !this.#use12Hour) return
+                this.#setPeriod(btn.dataset.period);
+            });
+        }
+
+        #setPeriod(period) {
+            if (period !== 'AM' && period !== 'PM') return
+            if (this.#period === period) return
+
+            this.#readColumns();
+            const was = this.#period;
+            this.#period = period;
+
+            if (was === 'AM' && period === 'PM' && this.#hours < 12) {
+                this.#hours += 12;
+            } else if (was === 'PM' && period === 'AM' && this.#hours >= 12) {
+                this.#hours -= 12;
+            }
+
+            this.#columns.find(c => c.unit === 'hour')?.scrollToValue(this.#displayHour(), true);
+            this.#syncToolbar();
+            hapticTick(this.hapticFeedback);
+            this.#commitTime();
+        }
+
+        #syncToolbar() {
+            this.root.classList.toggle('RollDate__time--12h', this.#use12Hour);
+
+            this.root.querySelectorAll('[data-period]').forEach((btn) => {
+                const active = btn.dataset.period === this.#period;
+                btn.classList.toggle('RollDate__time__segment-btn--active', active);
+                btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+            });
+        }
+
+        #destroyColumns() {
+            this.#columns.forEach((column) => column._resizeObserver?.disconnect());
+            this.#columns = [];
+        }
+
+        #buildPickerColumns() {
+            this.#destroyColumns();
+
+            const picker = this.root.querySelector('.RollDate__time__picker');
+            if (!picker) return
+
             const hourValues = this.#use12Hour
                 ? Array.from({ length: 12 }, (_, i) => i + 1)
                 : Array.from({ length: 24 }, (_, i) => i);
@@ -1219,74 +1297,36 @@ var RollDate = (function () {
                 minuteValues.push(m);
             }
 
-            this.root.innerHTML = `
-            <div class="RollDate__time__picker">
+            picker.innerHTML = `
             <div class="RollDate__time__field" data-unit="hour">
                 <div class="RollDate__time__column">
-                    <button type="button" class="RollDate__time__arrow RollDate__time__arrow--prev" data-dir="prev" aria-label="Earlier hour">${ARROW_SVG}</button>
                     <div class="RollDate__time__viewport">
                         <div class="RollDate__time__list"></div>
                     </div>
-                    <button type="button" class="RollDate__time__arrow RollDate__time__arrow--next" data-dir="next" aria-label="Later hour">${ARROW_SVG}</button>
                 </div>
             </div>
             <span class="RollDate__time__sep">:</span>
             <div class="RollDate__time__field" data-unit="minute">
                 <div class="RollDate__time__column">
-                    <button type="button" class="RollDate__time__arrow RollDate__time__arrow--prev" data-dir="prev" aria-label="Earlier minute">${ARROW_SVG}</button>
                     <div class="RollDate__time__viewport">
                         <div class="RollDate__time__list"></div>
                     </div>
-                    <button type="button" class="RollDate__time__arrow RollDate__time__arrow--next" data-dir="next" aria-label="Later minute">${ARROW_SVG}</button>
                 </div>
             </div>
-            ${this.#use12Hour ? `
-            <div class="RollDate__time__field RollDate__time__field--period" data-unit="period">
-                <div class="RollDate__time__column">
-                    <button type="button" class="RollDate__time__arrow RollDate__time__arrow--prev" data-dir="prev" aria-label="Earlier period">${ARROW_SVG}</button>
-                    <div class="RollDate__time__viewport">
-                        <div class="RollDate__time__list"></div>
-                    </div>
-                    <button type="button" class="RollDate__time__arrow RollDate__time__arrow--next" data-dir="next" aria-label="Later period">${ARROW_SVG}</button>
-                </div>
-            </div>` : ''}
-            </div>
-            <div class="RollDate__time__display" aria-live="polite"></div>
         `;
 
-            this.#displayEl = this.root.querySelector('.RollDate__time__display');
-            if (this.#use12Hour) {
-                this.root.classList.add('RollDate__time--12h');
-            }
-
-            this.#columns.push(this.#createColumn('hour', hourValues, this.#displayHour()));
+            this.#columns.push(this.#createColumn('hour', hourValues, this.#use12Hour ? this.#displayHour() : this.#hours));
             this.#columns.push(this.#createColumn('minute', minuteValues, this.#minutes));
-            if (this.#use12Hour) {
-                this.#columns.push(this.#createColumn('period', ['AM', 'PM'], this.#period));
-            }
-
-            this.#updateDisplay();
-        }
-
-        #formatDisplay() {
-            const hours = String(this.#hours).padStart(2, '0');
-            const minutes = String(this.#minutes).padStart(2, '0');
-            if (this.#use12Hour) {
-                return `${String(this.#displayHour()).padStart(2, '0')}:${minutes} ${this.#period}`
-            }
-            return `${hours}:${minutes}`
-        }
-
-        #updateDisplay() {
-            if (this.#displayEl) {
-                this.#displayEl.textContent = this.#formatDisplay();
-            }
         }
 
         #commitTime() {
             this.#readColumns();
-            this.#updateDisplay();
             this.onChange(this.getTime());
+        }
+
+        #parseItemValue(unit, raw) {
+            if (unit === 'period') return raw
+            return Number(raw)
         }
 
         #createColumn(unit, values, initial) {
@@ -1301,16 +1341,21 @@ var RollDate = (function () {
                 return `<div class="RollDate__time__item" data-value="${value}">${label}</div>`
             }).join('');
 
-            list.style.paddingTop = `${ITEM_HEIGHT}px`;
-            list.style.paddingBottom = `${ITEM_HEIGHT}px`;
-
             const column = {
                 unit,
                 viewport,
                 list,
                 values,
-                offset: 0
+                offset: 0,
+                getMetrics: () => this.#readMetrics(viewport)
             };
+
+            const applyPadding = () => {
+                const { pad } = column.getMetrics();
+                list.style.paddingTop = `${pad}px`;
+                list.style.paddingBottom = `${pad}px`;
+            };
+            applyPadding();
 
             column.updateActive = () => {
                 const index = column.indexFromOffset();
@@ -1327,7 +1372,8 @@ var RollDate = (function () {
             };
 
             column.indexFromOffset = () => {
-                const raw = Math.round(-column.offset / ITEM_HEIGHT);
+                const { itemH } = column.getMetrics();
+                const raw = Math.round(-column.offset / itemH);
                 return Math.min(values.length - 1, Math.max(0, raw))
             };
 
@@ -1340,42 +1386,51 @@ var RollDate = (function () {
             };
 
             column.snap = () => {
+                const { itemH } = column.getMetrics();
                 const index = column.indexFromOffset();
-                column.offset = -index * ITEM_HEIGHT;
+                column.offset = -index * itemH;
                 column._lastIndex = index;
                 column.apply(true);
                 this.#commitTime();
             };
 
             column.scrollToValue = (value, animate = true) => {
+                const { itemH } = column.getMetrics();
                 const index = values.indexOf(value);
                 if (index < 0) return
-                column.offset = -index * ITEM_HEIGHT;
+                column.offset = -index * itemH;
+                column._lastIndex = index;
                 column.apply(animate);
             };
 
-            column.stepBy = (delta) => {
-                const index = Math.min(values.length - 1, Math.max(0, column.indexFromOffset() + delta));
-                column.offset = -index * ITEM_HEIGHT;
-                column.apply(true);
+            column.scrollToIndex = (index, animate = true) => {
+                const { itemH } = column.getMetrics();
+                const clamped = Math.min(values.length - 1, Math.max(0, index));
+                column.offset = -clamped * itemH;
+                column._lastIndex = clamped;
+                column.apply(animate);
             };
 
             column.scrollToValue(initial, false);
             this.#bindWheel(column);
             this.#bindTouch(column);
-            this.#bindArrows(field, column);
+            this.#bindItemClick(column);
+            column._resizeObserver = new ResizeObserver(() => {
+                applyPadding();
+                column.scrollToIndex(column.indexFromOffset(), false);
+            });
+            column._resizeObserver.observe(viewport);
 
             return column
         }
 
-        #bindArrows(field, column) {
-            field.querySelector('[data-dir="prev"]')?.addEventListener('click', (e) => {
-                e.preventDefault();
-                column.stepBy(-1);
-            });
-            field.querySelector('[data-dir="next"]')?.addEventListener('click', (e) => {
-                e.preventDefault();
-                column.stepBy(1);
+        #bindItemClick(column) {
+            column.list.addEventListener('click', (e) => {
+                const item = e.target.closest('.RollDate__time__item');
+                if (!item) return
+                const value = this.#parseItemValue(column.unit, item.dataset.value);
+                column.scrollToValue(value, true);
+                this.#commitTime();
             });
         }
 
@@ -1383,9 +1438,10 @@ var RollDate = (function () {
             column.viewport.addEventListener('wheel', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                const { itemH } = column.getMetrics();
                 column.list.style.transition = 'none';
                 column.offset -= e.deltaY * 0.35;
-                const min = -(column.values.length - 1) * ITEM_HEIGHT;
+                const min = -(column.values.length - 1) * itemH;
                 column.offset = Math.max(min, Math.min(0, column.offset));
                 column.list.style.transform = `translateY(${column.offset}px)`;
                 column.updateActive();
@@ -1408,8 +1464,9 @@ var RollDate = (function () {
             column.viewport.addEventListener('touchmove', (e) => {
                 if (!e.touches || e.touches.length !== 1) return
                 e.preventDefault();
+                const { itemH } = column.getMetrics();
                 column.offset = startOffset + (e.touches[0].clientY - startY);
-                const min = -(column.values.length - 1) * ITEM_HEIGHT;
+                const min = -(column.values.length - 1) * itemH;
                 column.offset = Math.max(min, Math.min(0, column.offset));
                 column.list.style.transform = `translateY(${column.offset}px)`;
                 column.updateActive();
@@ -1421,13 +1478,12 @@ var RollDate = (function () {
         #readColumns() {
             const hourCol = this.#columns.find(c => c.unit === 'hour');
             const minuteCol = this.#columns.find(c => c.unit === 'minute');
-            const periodCol = this.#columns.find(c => c.unit === 'period');
+            if (!hourCol || !minuteCol) return
 
             const hourValue = hourCol.getValue();
             this.#minutes = minuteCol.getValue();
 
-            if (this.#use12Hour && periodCol) {
-                this.#period = periodCol.getValue();
+            if (this.#use12Hour) {
                 if (this.#period === 'AM') {
                     this.#hours = hourValue === 12 ? 0 : hourValue;
                 } else {
@@ -1448,16 +1504,15 @@ var RollDate = (function () {
             if (this.#use12Hour) {
                 this.#period = this.#hours >= 12 ? 'PM' : 'AM';
                 this.#columns.find(c => c.unit === 'hour')?.scrollToValue(this.#displayHour());
-                this.#columns.find(c => c.unit === 'period')?.scrollToValue(this.#period);
             } else {
                 this.#columns.find(c => c.unit === 'hour')?.scrollToValue(this.#hours);
             }
             this.#columns.find(c => c.unit === 'minute')?.scrollToValue(this.#minutes);
-            this.#updateDisplay();
+            this.#syncToolbar();
         }
 
         destroy() {
-            this.#columns = [];
+            this.#destroyColumns();
             this.root.innerHTML = '';
         }
     }
@@ -1678,6 +1733,11 @@ var RollDate = (function () {
                 const btn = document.createElement('button');
                 btn.type = 'button';
                 btn.className = 'RollDate__footer__button';
+                if (cfg.variant === 'primary') {
+                    btn.classList.add('RollDate__footer__button--primary');
+                } else if (cfg.variant === 'secondary') {
+                    btn.classList.add('RollDate__footer__button--secondary');
+                }
                 btn.textContent = cfg.text;
                 btn.addEventListener('click', (e) => {
                     e.preventDefault();
@@ -1809,7 +1869,7 @@ var RollDate = (function () {
 
             const baseOptions = {
                 mode: 'auto',
-                theme: 'dark',
+                theme: 'main',
                 startWeekFromMonday: true,
                 selectType: 'single',
                 monthsNames: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
@@ -1826,6 +1886,7 @@ var RollDate = (function () {
                 enableTime: false,
                 use12Hour: false,
                 timeStep: 1,
+                timePosition: 'right',
                 footerButtons: [],
                 rangePresets: [],
                 hapticFeedback: true,
@@ -1833,7 +1894,7 @@ var RollDate = (function () {
             };
 
             if (baseOptions.theme === 'default') {
-                baseOptions.theme = 'dark';
+                baseOptions.theme = 'main';
             }
 
             const resolvedLocale = baseOptions.locale ||
@@ -1913,6 +1974,8 @@ var RollDate = (function () {
 
             if (this.options.enableTime) {
                 this.$container.classList.add('RollDate__has-time');
+                const timePosition = this.options.timePosition === 'bottom' ? 'bottom' : 'right';
+                this.$container.classList.add(`RollDate__time-position_${timePosition}`);
             }
             if (this.options.footerButtons?.length || this.options.enableTime) {
                 this.$container.classList.add('RollDate__has-footer');
