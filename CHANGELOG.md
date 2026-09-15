@@ -2,11 +2,38 @@
 
 All notable changes to `@rolldate/core` are documented here.
 
+## [1.2.4] — 2026-09-15
+
+### Added
+
+- **Keyboard accessibility** — day cells are `<button>` elements with roving `tabindex`, arrow/`Home`/`End`/`Page` navigation, and `Escape` to close popups
+- **Localized month controls** — previous/next month buttons expose `aria-label` (`previousMonthLabel` / `nextMonthLabel`)
+- **Selected state for assistive tech** — selected days set `aria-pressed` and include a locale-aware suffix in `aria-label`
+
+### Fixed
+
+- **Focus after select** — with `closeOnSelect: true`, closing the popup restores focus to the input that opened it
+- **Focus-visible days** — keyboard focus uses a high-contrast outline instead of a border-only hint
+- **Disabled days** — native `disabled` keeps them out of keyboard focus and selection
+
+## [1.2.3] — 2026-08-18
+
+### Fixed
+
+- **`selectToday()` / “Now” footer** — when `enableTime` is on, sets current time (not just today’s date)
+- **Month/year grid** — cell height matches 4×4 layout on desktop and mobile (no clipped rows)
+- **Footer visibility** — footer renders only when `footerButtons` are configured (not implicitly from `enableTime`)
+
+### Changed
+
+- **AM/PM toggle** — slightly larger tap target and label (`min-width: 40px`, `font-size: 12px`)
+- **README** — site links use `https://rolldate.dev/` (apex, no `www`)
+
 ## [1.2.2] — 2026-08-17
 
 ### Changed
 
-- **README** — added “What's new in 1.2” section; updated bundle size and www.rolldate.dev links
+- **README** — added “What's new in 1.2” section; updated bundle size and rolldate.dev links
 - **CHANGELOG** — expanded 1.2.0 notes (footer separator, removed `timeLabel`)
 
 ## [1.2.1] — 2026-08-17

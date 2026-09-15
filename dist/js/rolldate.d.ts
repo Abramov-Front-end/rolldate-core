@@ -50,6 +50,12 @@ export interface RollDateOptions {
   dateFormat?: string
   /** BCP 47 locale hint used when dateFormat is omitted */
   locale?: string
+  /** Accessible name for the previous-month control. Defaults from locale (en/uk). */
+  previousMonthLabel?: string
+  /** Accessible name for the next-month control. Defaults from locale (en/uk). */
+  nextMonthLabel?: string
+  /** Suffix added to a selected day's accessible name. Defaults from locale (en/uk). */
+  selectedLabel?: string
   startWeekFromMonday?: boolean
   disabledDates?: RollDateDateLike[]
   /** Dates with dot marker(s). Supports multiple colors per day via `{ date, colors: [...] }`. */
@@ -92,7 +98,8 @@ declare class RollDate {
   readonly period: RollDatePeriod
 
   open(): void
-  close(): void
+  /** Close popup. Pass `{ restoreFocus: true }` to return focus to the element that opened it. */
+  close(opts?: { restoreFocus?: boolean }): void
   selectToday(): void
   clearSelection(): void
   /** Navigate calendar to a date without changing selection */

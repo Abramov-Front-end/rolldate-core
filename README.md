@@ -1,13 +1,24 @@
 > **⭐ If RollDate saves you time, [star the repo](https://github.com/Abramov-Front-end/rolldate-core)** — it helps others discover it.  
-> **[Live demo](https://www.rolldate.dev/)** · **[Docs](https://www.rolldate.dev/docs)** · **[Product Hunt](https://www.producthunt.com/products/rolldate?launch=rolldate)** · **[Issues & feedback](https://github.com/Abramov-Front-end/rolldate-core/issues)**
+> **[Live demo](https://rolldate.dev/)** · **[Docs](https://rolldate.dev/docs)** · **[Product Hunt](https://www.producthunt.com/products/rolldate?launch=rolldate)** · **[Issues & feedback](https://github.com/Abramov-Front-end/rolldate-core/issues)**
 
 # RollDate (`@rolldate/core`)
 
 JavaScript scrolling date picker — single / range / multi select, optional time picker (24h / 12h), **main** / dark / light themes. No framework required.
 
-**Live demo:** https://www.rolldate.dev/  
+**Live demo:** https://rolldate.dev/  
 **GitHub:** https://github.com/Abramov-Front-end/rolldate-core  
 **MCP** (Cursor & other AI IDEs): [`@rolldate/mcp`](https://www.npmjs.com/package/@rolldate/mcp) · [repo](https://github.com/Abramov-Front-end/rolldate-mcp)
+
+## RollDate ecosystem
+
+Need a full event calendar instead of a date picker?
+
+**RollDate Events** is a zero-dependency JavaScript event calendar with Month, Week, Day and Agenda views, continuous navigation, responsive layouts, and TypeScript support.
+
+- [RollDate Events](https://rolldate.dev/events)
+- [Live demo](https://rolldate.dev/events/demo)
+- [GitHub](https://github.com/Abramov-Front-end/rolldate-events)
+- [npm](https://www.npmjs.com/package/@rolldate/events)
 
 <p align="center">
   <img src="./assets/demo/rolldate-demo.gif" alt="RollDate scrolling date picker demo" width="720">
@@ -138,7 +149,13 @@ new RollDate('#date-input', {
 | `setDisabledDates` / `disableDate` / `enableDate` | Disabled dates |
 | `setHighlightDates` / `highlightDate` / `unhighlightDate` | Day markers |
 
-Full API: https://www.rolldate.dev/docs
+Full API: https://rolldate.dev/docs
+
+## What's new in 1.2.4
+
+- Keyboard-accessible day grid (`<button>`, roving tabindex, arrow/`Page` keys, `Escape`)
+- Popup restores focus to the opening input after select (`closeOnSelect`) and after `Escape`
+- Localized previous/next month labels and `aria-pressed` on selected days
 
 ## What's new in 1.2
 
@@ -154,7 +171,7 @@ See [CHANGELOG.md](./CHANGELOG.md) for 1.2.0 / 1.2.1 details and earlier release
 ## What's new in 1.1.4
 
 - Smooth animated navigation when clicking calendar prev/next arrows
-- Official site and docs at https://www.rolldate.dev/
+- Official site and docs at https://rolldate.dev/
 
 ## What's new in 1.1.0
 

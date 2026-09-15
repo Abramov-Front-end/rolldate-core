@@ -6,6 +6,24 @@
 var RollDate = (function () {
     'use strict';
 
+    const NAV_LABELS = {
+        en: {
+            previousMonth: 'Previous month',
+            nextMonth: 'Next month',
+            selected: 'selected'
+        },
+        uk: {
+            previousMonth: 'Попередній місяць',
+            nextMonth: 'Наступний місяць',
+            selected: 'вибрано'
+        }
+    };
+
+    function getTranslation(key, locale = 'en') {
+        const lang = String(locale || 'en').toLowerCase().split('-')[0];
+        const dict = NAV_LABELS[lang] || NAV_LABELS.en;
+        return dict[key] || NAV_LABELS.en[key] || key
+    }
     function getDecade(year) {
         return Math.floor(year / 10) * 10
     }
@@ -184,6 +202,75 @@ var RollDate = (function () {
         const day = date.getDay();
         const diff = (6 - day + Number(startMonday) + 7) % 7;
         return new Date(date.getFullYear(), date.getMonth(), date.getDate() + diff)
+    }
+
+    function startOfDay(date) {
+        return new Date(date.getFullYear(), date.getMonth(), date.getDate())
+    }
+
+    function addDays(date, amount) {
+        const next = startOfDay(date);
+        next.setDate(next.getDate() + amount);
+        return next
+    }
+
+    function addMonths(date, amount) {
+        const day = date.getDate();
+        const next = new Date(date.getFullYear(), date.getMonth() + amount, 1);
+        const last = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
+        next.setDate(Math.min(day, last));
+        return next
+    }
+
+    function addYears(date, amount) {
+        return addMonths(date, amount * 12)
+    }
+
+    function escapeAttr(value) {
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/</g, '&lt;')
+    }
+
+    function formatDayLabel(date, locale) {
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        try {
+            return new Intl.DateTimeFormat(locale || undefined, options).format(date)
+        } catch {
+            return new Intl.DateTimeFormat('en', options).format(date)
+        }
+    }
+
+    function findAvailableDate(start, direction, isUnavailable, minDate, maxDate, maxSteps = 800) {
+        const step = direction < 0 ? -1 : 1;
+        let cursor = startOfDay(start);
+        const min = minDate ? startOfDay(minDate) : null;
+        const max = maxDate ? startOfDay(maxDate) : null;
+
+        for (let i = 0; i < maxSteps; i++) {
+            if (min && cursor < min) return null
+            if (max && cursor > max) return null
+            if (!isUnavailable(cursor)) return cursor
+            cursor = addDays(cursor, step);
+        }
+        return null
+    }
+
+    function nearestAvailableDate(start, isUnavailable, minDate, maxDate) {
+        const origin = startOfDay(start);
+        if (!isUnavailable(origin)) return origin
+
+        const forward = findAvailableDate(addDays(origin, 1), 1, isUnavailable, minDate, maxDate);
+        const backward = findAvailableDate(addDays(origin, -1), -1, isUnavailable, minDate, maxDate);
+
+        if (forward && backward) {
+            const originTime = origin.getTime();
+            return Math.abs(forward.getTime() - originTime) <= Math.abs(backward.getTime() - originTime)
+                ? forward
+                : backward
+        }
+        return forward || backward || origin
     }
 
     class Observe {
@@ -455,6 +542,10 @@ var RollDate = (function () {
                 : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             this.enableTime = Boolean(options.enableTime);
             this.hasFooter = Boolean(options.footerButtons && options.footerButtons.length);
+            this.locale = options.locale;
+            this.previousMonthLabel = options.previousMonthLabel || 'Previous month';
+            this.nextMonthLabel = options.nextMonthLabel || 'Next month';
+            this.selectedLabel = options.selectedLabel || 'selected';
 
             this.init();
         }
@@ -479,13 +570,13 @@ var RollDate = (function () {
                         <div class="RollDate__header__month"></div>
                     </div>
                     <div class="RollDate__calendar__buttons">
-                        <button class="RollDate__calendar__button" data-direction="prev">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 61 55" width="55" height="50">
+                        <button type="button" class="RollDate__calendar__button" data-direction="prev" aria-label="${escapeAttr(this.previousMonthLabel)}">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 61 55" width="55" height="50" aria-hidden="true" focusable="false">
                                 <path id="Форма 2" fill-rule="evenodd" class="s0" d="m52.76 54.67l-44.73 0.12c-6.16 0.02-10.02-6.64-6.96-11.98l22.26-38.79c3.07-5.35 10.76-5.37 13.86-0.04l22.47 38.67c3.09 5.33-0.74 12.01-6.9 12.02z"/>
                             </svg>
                         </button>
-                        <button class="RollDate__calendar__button" data-direction="next">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 61 55" width="55" height="50">
+                        <button type="button" class="RollDate__calendar__button" data-direction="next" aria-label="${escapeAttr(this.nextMonthLabel)}">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 61 55" width="55" height="50" aria-hidden="true" focusable="false">
                                 <path id="Форма 2" fill-rule="evenodd" class="s0" d="m52.76 54.67l-44.73 0.12c-6.16 0.02-10.02-6.64-6.96-11.98l22.26-38.79c3.07-5.35 10.76-5.37 13.86-0.04l22.47 38.67c3.09 5.33-0.74 12.01-6.9 12.02z" />
                             </svg>
                         </button>
@@ -581,11 +672,22 @@ var RollDate = (function () {
                     }
                 }
 
-                datesHtml += `<div class="RollDate__calendar__day ${disabledClass} ${isToday ? 'RollDate__calendar__day--today' : ''} ${selectionClass}"
+                const isSelected = Boolean(selectionClass) || (
+                    (selectType === 'range' && selectedDates.length === 1 &&
+                        new Date(selectedDates[0].getFullYear(), selectedDates[0].getMonth(), selectedDates[0].getDate()).getTime() === date.getTime())
+                );
+                let label = formatDayLabel(date, this.locale);
+                if (isSelected) label += `, ${this.selectedLabel}`;
+                const disabledAttr = array[i].disabled ? ' disabled' : ' tabindex="-1"';
+                const pressedAttr = array[i].disabled ? '' : ` aria-pressed="${isSelected ? 'true' : 'false'}"`;
+                const todayAttr = isToday ? ' aria-current="date"' : '';
+
+                datesHtml += `<button type="button" class="RollDate__calendar__day ${disabledClass} ${isToday ? 'RollDate__calendar__day--today' : ''} ${selectionClass}"
                             data-bind='["year", "month"]'
                             data-year="${date.getFullYear()}"
                             data-month="${date.getMonth()}"  
-                            data-day="${date.getDate()}">${date.getDate()}${highlightDots}</div>`;
+                            data-day="${date.getDate()}"
+                            aria-label="${escapeAttr(label)}"${disabledAttr}${pressedAttr}${todayAttr}>${date.getDate()}${highlightDots}</button>`;
             }
 
             return datesHtml
@@ -933,6 +1035,21 @@ var RollDate = (function () {
             this.ctx = context;
         }
 
+        #isDayDisabled(date) {
+            const min = this.ctx.options.minDate;
+            const max = this.ctx.options.maxDate;
+            const day = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            if (min) {
+                const minDay = new Date(min.getFullYear(), min.getMonth(), min.getDate());
+                if (day < minDay) return true
+            }
+            if (max) {
+                const maxDay = new Date(max.getFullYear(), max.getMonth(), max.getDate());
+                if (day > maxDay) return true
+            }
+            return typeof this.ctx.isDateDisabled === 'function' ? this.ctx.isDateDisabled(day) : false
+        }
+
         update(direction) {
             const period = this.ctx.period;
             const isUp = direction === 'up';
@@ -980,9 +1097,10 @@ var RollDate = (function () {
                                 );
                             }
                             for (let d = new Date(newFirst); d < upDate; d.setDate(d.getDate() + 1)) {
+                                const date = new Date(d);
                                 newDates.push({
-                                    date: new Date(d),
-                                    disabled: this.ctx?.options?.minDate > new Date(d) || false
+                                    date,
+                                    disabled: this.#isDayDisabled(date)
                                 });
                             }
                             return { items: newDates, newBound: newFirst }
@@ -1001,9 +1119,10 @@ var RollDate = (function () {
                             }
 
                             for (let d = firstNew; d <= newLast; d.setDate(d.getDate() + 1)) {
+                                const date = new Date(d);
                                 newDates.push({
-                                    date: new Date(d),
-                                    disabled: this.ctx?.options?.maxDate < new Date(d) || false
+                                    date,
+                                    disabled: this.#isDayDisabled(date)
                                 });
                             }
                             return { items: newDates, newBound: newLast }
@@ -1012,7 +1131,11 @@ var RollDate = (function () {
                     render: dates => this.ctx.render.dates(
                         dates,
                         this.ctx.selectedDates,
-                        this.ctx.options.selectType
+                        this.ctx.options.selectType,
+                        date => {
+                            const colors = this.ctx.getHighlightColors?.(date);
+                            return colors?.length ? { colors } : null
+                        }
                     ),
                     block: this.ctx.dom.$days_block
                 },
@@ -1121,6 +1244,9 @@ var RollDate = (function () {
                 : items.length;
             this.trim(direction, trimSize);
             this.ctx.observe.on(period);
+            if (typeof this.ctx.refreshDayTabindex === 'function') {
+                this.ctx.refreshDayTabindex();
+            }
             this.ctx.scroll.blocked = false;
         }
 
@@ -1530,6 +1656,12 @@ var RollDate = (function () {
         #highlightDateMap = new Map()
         #docClickHandler = null
         #openTriggers = []
+        #activeDateStamp = null
+        #focusReturnEl = null
+        #ignoreFocusOpen = false
+        #focusAfterView = false
+        #calendarKeyHandler = null
+        #triggerListeners = []
 
         #clampDateToRange(date, minDate, maxDate) {
             if (!(date instanceof Date) || Number.isNaN(date.getTime())) return minDate
@@ -1670,6 +1802,17 @@ var RollDate = (function () {
 
         #isDateDisabled(date) {
             return this.#disabledDateStamps.has(this.#toDateStamp(date))
+        }
+
+        #isDayUnavailable(date) {
+            const day = startOfDay(date);
+            if (this.options.minDate) {
+                if (day < startOfDay(this.options.minDate)) return true
+            }
+            if (this.options.maxDate) {
+                if (day > startOfDay(this.options.maxDate)) return true
+            }
+            return this.#isDateDisabled(day)
         }
 
         #isDateHighlighted(date) {
@@ -1898,8 +2041,12 @@ var RollDate = (function () {
             }
 
             const resolvedLocale = baseOptions.locale ||
-                (typeof navigator !== 'undefined' ? navigator.language : undefined);
+                (typeof navigator !== 'undefined' ? navigator.language : 'en');
+            baseOptions.locale = resolvedLocale;
             baseOptions.dateFormat = baseOptions.dateFormat || getLocaleInputFormat(resolvedLocale);
+            baseOptions.previousMonthLabel = baseOptions.previousMonthLabel || getTranslation('previousMonth', resolvedLocale);
+            baseOptions.nextMonthLabel = baseOptions.nextMonthLabel || getTranslation('nextMonth', resolvedLocale);
+            baseOptions.selectedLabel = baseOptions.selectedLabel || getTranslation('selected', resolvedLocale);
 
             const parsedDates = {
                 startDate: checkDateFormat(
@@ -1989,7 +2136,11 @@ var RollDate = (function () {
                 monthsShortNames: this.options.monthsShortNames,
                 weekDays: this.options.weekDaysNames,
                 enableTime: this.options.enableTime,
-                footerButtons: this.options.footerButtons
+                footerButtons: this.options.footerButtons,
+                locale: this.options.locale,
+                previousMonthLabel: this.options.previousMonthLabel,
+                nextMonthLabel: this.options.nextMonthLabel,
+                selectedLabel: this.options.selectedLabel
             });
 
             this.dom ={
@@ -2025,6 +2176,8 @@ var RollDate = (function () {
                 isDateDisabled: date => this.#isDateDisabled(date)
             });
 
+            this.refreshDayTabindex = () => this.#onVirtualizeRefresh();
+            this.#activeDateStamp = this.#toDateStamp(this.#resolveDefaultActiveDate());
             this.#updateView(this.#viewNumber);
         }
 
@@ -2088,6 +2241,8 @@ var RollDate = (function () {
                 ? options.onScrollComplete
                 : null;
             const finishScroll = () => {
+                this.#syncDayTabindex({ focus: this.#focusAfterView });
+                this.#focusAfterView = false;
                 onScrollComplete?.();
             };
 
@@ -2105,6 +2260,7 @@ var RollDate = (function () {
                         this.options.selectType,
                         date => this.#getHighlightMeta(date)
                     );
+                    this.#syncDayTabindex({ focus: false });
                     break
 
                 default:
@@ -2223,13 +2379,20 @@ var RollDate = (function () {
                 this.#openTriggers = openTriggers.filter(Boolean);
 
                 this.#openTriggers.forEach(trigger => {
-                    trigger.addEventListener('click', (e) => {
+                    const onClick = (e) => {
                         e.stopPropagation();
-                        this.open();
-                    });
+                        this.open({ source: trigger });
+                    };
+                    this.#bindTrigger(trigger, 'click', onClick);
 
                     if (trigger.tagName === 'INPUT') {
-                        trigger.addEventListener('focus', () => this.open());
+                        const onFocus = () => {
+                            if (this.#ignoreFocusOpen) return
+                            this.open({ source: trigger });
+                        };
+                        const onKeyDown = (e) => this.#handleInputKeyDown(e, trigger);
+                        this.#bindTrigger(trigger, 'focus', onFocus);
+                        this.#bindTrigger(trigger, 'keydown', onKeyDown);
                     }
                 });
 
@@ -2323,7 +2486,9 @@ var RollDate = (function () {
                         this.#selectedDates = [date];
                         this.options.selectDate(date);
                         this.#updateInputValue();
-                        if (this.mode === 'popup' && this.options.closeOnSelect) this.close();
+                        this.#activeDateStamp = this.#toDateStamp(date);
+                        this.#syncDayTabindex({ focus: false });
+                        if (this.mode === 'popup' && this.options.closeOnSelect) this.close({ restoreFocus: true });
                     }
 
                     if (this.options.selectType === 'range') {
@@ -2372,9 +2537,11 @@ var RollDate = (function () {
 
                         this.options.selectDate([...this.#selectedDates]);
                         this.#updateInputValue();
+                        this.#activeDateStamp = this.#toDateStamp(date);
+                        this.#syncDayTabindex({ focus: false });
 
                         if (this.mode === 'popup' && this.#selectedDates.length === 2 && this.options.closeOnSelect) {
-                            this.close();
+                            this.close({ restoreFocus: true });
                         }
                     }
 
@@ -2394,8 +2561,10 @@ var RollDate = (function () {
                         }
                         this.options.selectDate(this.#selectedDates);
                         this.#updateInputValue();
+                        this.#activeDateStamp = this.#toDateStamp(date);
+                        this.#syncDayTabindex({ focus: false });
                         if (this.mode === 'popup' && this.options.closeOnSelect) {
-                            this.close();
+                            this.close({ restoreFocus: true });
                         }
                     }
                 }
@@ -2480,6 +2649,233 @@ var RollDate = (function () {
                     });
                 });
             });
+
+            this.#calendarKeyHandler = (e) => this.#handleCalendarKeyDown(e);
+            this.$container.addEventListener('keydown', this.#calendarKeyHandler);
+        }
+
+        #bindTrigger(element, type, handler) {
+            element.addEventListener(type, handler);
+            this.#triggerListeners.push({ element, type, handler });
+        }
+
+        #handleInputKeyDown(e, trigger) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                this.open({ source: trigger });
+                return
+            }
+            if (e.key === 'Escape' && this.mode === 'popup' && this.$container.style.display !== 'none') {
+                e.preventDefault();
+                this.close({ restoreFocus: true });
+            }
+        }
+
+        #resolveDefaultActiveDate() {
+            let candidate = null;
+            if (this.#selectedDates.length) {
+                if (
+                    this.options.selectType === 'range' &&
+                    this.#focusReturnEl &&
+                    this.$endInput &&
+                    this.#focusReturnEl === this.$endInput &&
+                    this.#selectedDates[1]
+                ) {
+                    candidate = this.#selectedDates[1];
+                } else {
+                    candidate = this.#selectedDates[0];
+                }
+            } else if (this.options.startDate) {
+                candidate = this.options.startDate;
+            } else {
+                candidate = new Date();
+            }
+
+            const day = startOfDay(candidate);
+            if (!this.#isDayUnavailable(day)) return day
+            return nearestAvailableDate(
+                day,
+                date => this.#isDayUnavailable(date),
+                this.options.minDate,
+                this.options.maxDate
+            )
+        }
+
+        #enabledDayElements() {
+            return [...this.$container.querySelectorAll('.RollDate__calendar__day')].filter(el =>
+                !el.disabled && !el.classList.contains('RollDate__calendar__day--disabled')
+            )
+        }
+
+        #closestEnabledDay(days) {
+            if (!days.length) return null
+            const stamp = this.#activeDateStamp;
+            if (stamp == null) return days[0]
+            let best = days[0];
+            let bestDelta = Math.abs(this.#dayElementStamp(best) - stamp);
+            for (const day of days) {
+                const delta = Math.abs(this.#dayElementStamp(day) - stamp);
+                if (delta < bestDelta) {
+                    best = day;
+                    bestDelta = delta;
+                }
+            }
+            return best
+        }
+
+        #syncDayTabindex({ focus = false } = {}) {
+            if (this.period !== 'day') return
+            const enabled = this.#enabledDayElements();
+            enabled.forEach(el => { el.tabIndex = -1; });
+            if (!enabled.length) return
+
+            if (this.#activeDateStamp == null) {
+                this.#activeDateStamp = this.#toDateStamp(this.#resolveDefaultActiveDate());
+            }
+
+            let active = this.#findDayElement(new Date(this.#activeDateStamp));
+            if (!active || active.disabled || active.classList.contains('RollDate__calendar__day--disabled')) {
+                active = this.#closestEnabledDay(enabled);
+            }
+            if (!active) return
+            active.tabIndex = 0;
+            this.#syncDayAccessibleName();
+            if (focus && this.$container.style.display !== 'none') {
+                active.focus();
+            }
+        }
+
+        #syncDayAccessibleName() {
+            const selectedLabel = this.options.selectedLabel || getTranslation('selected', this.options.locale);
+            this.$container.querySelectorAll('.RollDate__calendar__day').forEach(dayEl => {
+                dayEl.removeAttribute('aria-selected');
+                const date = new Date(
+                    Number(dayEl.dataset.year),
+                    Number(dayEl.dataset.month),
+                    Number(dayEl.dataset.day)
+                );
+                const selected = dayEl.classList.contains('RollDate__calendar__day--selected') ||
+                    dayEl.classList.contains('RollDate__calendar__day--range-first') ||
+                    dayEl.classList.contains('RollDate__calendar__day--range-last') ||
+                    dayEl.classList.contains('RollDate__calendar__day--range-selected');
+                let label = formatDayLabel(date, this.options.locale);
+                if (selected) label += `, ${selectedLabel}`;
+                dayEl.setAttribute('aria-label', label);
+                if (dayEl.disabled) {
+                    dayEl.removeAttribute('aria-pressed');
+                } else {
+                    dayEl.setAttribute('aria-pressed', selected ? 'true' : 'false');
+                }
+            });
+        }
+
+        #onVirtualizeRefresh() {
+            if (this.period !== 'day') return
+            const activeEl = document.activeElement;
+            const hadDayFocus = Boolean(
+                activeEl &&
+                activeEl.classList?.contains('RollDate__calendar__day') &&
+                this.$container.contains(activeEl)
+            );
+            const stampDate = this.#activeDateStamp != null ? new Date(this.#activeDateStamp) : null;
+            const stampEl = stampDate ? this.#findDayElement(stampDate) : null;
+            if (hadDayFocus && !stampEl && stampDate) {
+                this.#focusAfterView = true;
+                this.goToDate(stampDate);
+                return
+            }
+            this.#syncDayTabindex({
+                focus: hadDayFocus || (activeEl === document.body && this.mode === 'popup' && this.$container.style.display !== 'none')
+            });
+        }
+
+        #activateDate(date, { focus = true } = {}) {
+            const day = startOfDay(date);
+            this.#activeDateStamp = this.#toDateStamp(day);
+            const el = this.#findDayElement(day);
+            if (!el) {
+                this.#focusAfterView = focus;
+                this.goToDate(day);
+                return
+            }
+            this.data.current_year = day.getFullYear();
+            this.data.current_month = day.getMonth();
+            this.data.current_decade = getDecade(day.getFullYear());
+            this.#updateHeader();
+            this.#syncDayTabindex({ focus });
+        }
+
+        #moveActiveDate(nextDate, direction) {
+            const found = findAvailableDate(
+                nextDate,
+                direction,
+                date => this.#isDayUnavailable(date),
+                this.options.minDate,
+                this.options.maxDate
+            );
+            if (!found) return
+            this.#activateDate(found, { focus: true });
+        }
+
+        #handleCalendarKeyDown(e) {
+            if (e.key === 'Escape' && this.mode === 'popup' && this.$container.style.display !== 'none') {
+                e.preventDefault();
+                this.close({ restoreFocus: true });
+                return
+            }
+
+            if (this.period !== 'day') return
+            const dayEl = e.target.closest?.('.RollDate__calendar__day');
+            if (!dayEl || dayEl.disabled) return
+
+            const current = startOfDay(new Date(
+                Number(dayEl.dataset.year),
+                Number(dayEl.dataset.month),
+                Number(dayEl.dataset.day)
+            ));
+
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                this.#moveActiveDate(addDays(current, -1), -1);
+                return
+            }
+            if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                this.#moveActiveDate(addDays(current, 1), 1);
+                return
+            }
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                this.#moveActiveDate(addDays(current, -7), -1);
+                return
+            }
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                this.#moveActiveDate(addDays(current, 7), 1);
+                return
+            }
+            if (e.key === 'Home') {
+                e.preventDefault();
+                this.#moveActiveDate(adjustToWeekStart(current, this.options.startWeekFromMonday), -1);
+                return
+            }
+            if (e.key === 'End') {
+                e.preventDefault();
+                this.#moveActiveDate(adjustToWeekEnd(current, this.options.startWeekFromMonday), 1);
+                return
+            }
+            if (e.key === 'PageUp') {
+                e.preventDefault();
+                const target = e.shiftKey ? addYears(current, -1) : addMonths(current, -1);
+                this.#moveActiveDate(target, -1);
+                return
+            }
+            if (e.key === 'PageDown') {
+                e.preventDefault();
+                const target = e.shiftKey ? addYears(current, 1) : addMonths(current, 1);
+                this.#moveActiveDate(target, 1);
+                return
+            }
         }
 
         #switchViewType(type) {
@@ -2821,15 +3217,12 @@ var RollDate = (function () {
         #paintSelection() {
             if (this.options.selectType === 'range') {
                 this.#paintRangeSelection();
-                return
-            }
-
-            if (this.options.selectType === 'multi') {
+            } else if (this.options.selectType === 'multi') {
                 this.#paintMultiSelection();
-                return
+            } else {
+                this.#paintSingleSelection();
             }
-
-            this.#paintSingleSelection();
+            this.#syncDayAccessibleName();
         }
 
         #clearRangeSelection() {
@@ -2940,7 +3333,17 @@ var RollDate = (function () {
             }
         }
 
-        open() {
+        open(opts = {}) {
+            if (opts.source) {
+                this.#focusReturnEl = opts.source;
+            } else if (this.#openTriggers.includes(document.activeElement)) {
+                this.#focusReturnEl = document.activeElement;
+            } else if (this.$endInput && document.activeElement === this.$endInput) {
+                this.#focusReturnEl = this.$endInput;
+            } else {
+                this.#focusReturnEl = this.$startInput || this.$trigger;
+            }
+
             if (this.mode === 'popup') {
                 this.#closeOtherPopups();
             }
@@ -2949,12 +3352,15 @@ var RollDate = (function () {
             this.$container.style.display = 'block';
 
             if (this.mode === 'popup') {
+                this.#activeDateStamp = this.#toDateStamp(this.#resolveDefaultActiveDate());
                 this.#positionCalendar();
 
                 if (this.#firstOpen) {
                     this.#scrollToStartDate();
                     this.#firstOpen = false;
+                    requestAnimationFrame(() => this.#syncDayTabindex({ focus: true }));
                 } else {
+                    this.#focusAfterView = true;
                     this.#updateView(this.#viewNumber);
                 }
             } else {
@@ -2971,18 +3377,28 @@ var RollDate = (function () {
             }
         }
 
-        close() {
+        close(opts = {}) {
             const wasOpen = this.$container.style.display !== 'none';
             this.$container.style.display = 'none';
             if (this.mode === 'popup') {
-                const triggers = this.$endInput ? [this.$startInput, this.$endInput] :
-                    this.$openTrigger ? [this.$openTrigger] : [this.$trigger];
+                if (opts.restoreFocus && this.#focusReturnEl && typeof this.#focusReturnEl.focus === 'function') {
+                    this.#ignoreFocusOpen = true;
+                    this.#focusReturnEl.focus();
+                    requestAnimationFrame(() => {
+                        setTimeout(() => {
+                            this.#ignoreFocusOpen = false;
+                        }, 0);
+                    });
+                } else {
+                    const triggers = this.$endInput ? [this.$startInput, this.$endInput] :
+                        this.$openTrigger ? [this.$openTrigger] : [this.$trigger];
 
-                triggers.forEach(trigger => {
-                    if (trigger && typeof trigger.blur === 'function') {
-                        trigger.blur();
-                    }
-                });
+                    triggers.forEach(trigger => {
+                        if (trigger && typeof trigger.blur === 'function') {
+                            trigger.blur();
+                        }
+                    });
+                }
             }
 
             if (wasOpen) {
@@ -3002,6 +3418,10 @@ var RollDate = (function () {
             this.data.current_month = now.getMonth();
             this.data.current_decade = getDecade(now.getFullYear());
 
+            if (this.options.enableTime && this.timePicker) {
+                this.timePicker.setTime(now.getHours(), now.getMinutes());
+            }
+
             const selected = this.#applyTimeToDate(now);
 
             if (this.options.selectType === 'single') {
@@ -3019,7 +3439,7 @@ var RollDate = (function () {
             this.#updateInputValue();
 
             if (this.mode === 'popup' && this.options.closeOnSelect && this.options.selectType === 'single') {
-                this.close();
+                this.close({ restoreFocus: true });
             }
         }
 
@@ -3043,6 +3463,14 @@ var RollDate = (function () {
                 document.removeEventListener('click', this.#docClickHandler);
                 this.#docClickHandler = null;
             }
+            if (this.#calendarKeyHandler) {
+                this.$container.removeEventListener('keydown', this.#calendarKeyHandler);
+                this.#calendarKeyHandler = null;
+            }
+            this.#triggerListeners.forEach(({ element, type, handler }) => {
+                element.removeEventListener(type, handler);
+            });
+            this.#triggerListeners = [];
             RollDate.#instances.delete(this);
             this.observe.disconnect();
             this.scroll?.destroy();
