@@ -7,6 +7,31 @@ export type RollDateTheme = 'main' | 'dark' | 'light' | 'default'
 export type RollDateSelectType = 'single' | 'range' | 'multi'
 export type RollDatePeriod = 'day' | 'month' | 'year'
 export type RollDateDateLike = string | Date
+/** `Date#getDay()`: 0 Sunday … 6 Saturday */
+export type RollDateWeekday = 0 | 1 | 2 | 3 | 4 | 5 | 6
+
+export type RollDateRangeRule = {
+  from: RollDateDateLike
+  to: RollDateDateLike
+}
+
+export type RollDateWeeklyRule = {
+  repeat: 'weekly'
+  weekdays: RollDateWeekday[]
+}
+
+export type RollDateMonthlyRule = {
+  repeat: 'monthly'
+  weekday: RollDateWeekday
+  occurrence: 1 | 2 | 3 | 4 | 5 | -1
+}
+
+export type RollDateRule =
+  | RollDateDateLike
+  | RollDateRangeRule
+  | RollDateWeeklyRule
+  | RollDateMonthlyRule
+  | ((date: Date) => boolean)
 
 export interface RollDateFooterButton {
   /** Button label */
@@ -57,7 +82,16 @@ export interface RollDateOptions {
   /** Suffix added to a selected day's accessible name. Defaults from locale (en/uk). */
   selectedLabel?: string
   startWeekFromMonday?: boolean
-  disabledDates?: RollDateDateLike[]
+  /**
+   * Denylist. Exact dates, inclusive ranges, weekly/monthly repeats, or callbacks.
+   * Always wins over `enabledDates`.
+   */
+  disabledDates?: RollDateRule[]
+  /**
+   * Allowlist. When set, every other date is blocked (then `disabledDates` still wins).
+   * Omit to allow all dates except `disabledDates` / min-max. `[]` blocks every date.
+   */
+  enabledDates?: RollDateRule[]
   /** Dates with dot marker(s). Supports multiple colors per day via `{ date, colors: [...] }`. */
   highlightDates?: (RollDateDateLike | RollDateHighlightDate)[]
   /** Quick range buttons (range mode). Use `picker.getViewMonth()` for the scrolled month. */
@@ -77,6 +111,11 @@ export interface RollDateOptions {
   timeStep?: number
   /** Tick feedback on month/year/decade/time changes */
   hapticFeedback?: boolean
+  /**
+   * Calendar (and time roll) wheel/touch speed. `1` is the built-in default.
+   * Use `0.7` / `1.5` to slow down or speed up. `0` disables scroll; arrows and keyboard still work.
+   */
+  scrollSpeed?: number
   footerButtons?: RollDateFooterButton[]
   /** Called when selection changes. Single → Date | null; range/multi → Date[] */
   selectDate?: (value: Date | Date[] | null) => void
@@ -112,8 +151,15 @@ declare class RollDate {
   getValue(): Date | Date[] | null
   /** Set value programmatically; pass `null` to clear */
   setValue(value: RollDateDateLike | RollDateDateLike[] | null): boolean
-  setDisabledDates(dates: RollDateDateLike[]): void
+  setDisabledDates(dates: RollDateRule[]): void
+  /**
+   * Replace the allowlist. `undefined` turns it off; `[]` blocks every date.
+   * Non-array values are ignored and keep the current allowlist.
+   * Dates that become unavailable are removed from the selection and `selectDate` runs.
+   */
+  setEnabledDates(dates?: RollDateRule[]): void
   disableDate(dateLike: RollDateDateLike): void
+  /** Removes one exact denylist entry. Does not override weekly, monthly, range, or callback `disabledDates` rules. */
   enableDate(dateLike: RollDateDateLike): void
   isDateDisabled(dateLike: RollDateDateLike): boolean
   setHighlightDates(dates: (RollDateDateLike | RollDateHighlightDate)[]): void

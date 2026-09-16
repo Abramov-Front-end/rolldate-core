@@ -7,6 +7,12 @@
   --rd-time-separator-gap: 11px;
   --rd-time-item-h: 32px;
   --rd-time-visible: 3;
+  --rd-cal-body-h: 251px;
+  --rd-cal-weekday-h: 24px;
+  --rd-cal-weekday-mb: 8px;
+  --rd-cal-month-gap: 4px;
+  --rd-cal-month-body-h: calc(var(--rd-cal-body-h) + var(--rd-cal-weekday-h) + var(--rd-cal-weekday-mb));
+  --rd-cal-month-cell: calc((var(--rd-cal-month-body-h) - 3 * var(--rd-cal-month-gap)) / 4);
   --rd-bg: #232830;
   --rd-border: #343b48;
   --rd-text-primary: #f1f5f9;
@@ -29,7 +35,8 @@
   border: 1px solid var(--rd-border);
   box-sizing: border-box;
   font-family: "Segoe UI", Arial, sans-serif;
-  overscroll-behavior: contain;
+  overscroll-behavior: none;
+  overflow-anchor: none;
   border-radius: 12px;
 }
 .RollDate__container * {
@@ -145,11 +152,21 @@
   opacity: 1;
   pointer-events: auto;
 }
+.RollDate__container.RollDate__calendar__type--months .RollDate__calendar__body {
+  flex-basis: var(--rd-cal-month-body-h);
+  height: var(--rd-cal-month-body-h);
+  min-height: var(--rd-cal-month-body-h);
+}
 .RollDate__container.RollDate__calendar__type--years .RollDate__calendar__years {
   display: grid;
   transform: scale(1, 1);
   opacity: 1;
   pointer-events: auto;
+}
+.RollDate__container.RollDate__calendar__type--years .RollDate__calendar__body {
+  flex-basis: var(--rd-cal-month-body-h);
+  height: var(--rd-cal-month-body-h);
+  min-height: var(--rd-cal-month-body-h);
 }
 .RollDate__container.RollDate__calendar__type--years .RollDate__calendar__switcher {
   color: var(--rd-header-muted);
@@ -254,6 +271,9 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  overscroll-behavior: none;
+  overflow-anchor: none;
+  touch-action: none;
 }
 .RollDate__calendar > .RollDate__header {
   flex: 0 0 auto;
@@ -286,11 +306,14 @@
   font-size: 12px;
 }
 .RollDate__calendar__body {
-  flex: 0 0 251px;
-  height: 251px;
-  min-height: 251px;
+  flex: 0 0 var(--rd-cal-body-h);
+  height: var(--rd-cal-body-h);
+  min-height: var(--rd-cal-body-h);
   overflow: hidden;
+  overflow: clip;
+  overflow-anchor: none;
   touch-action: none;
+  overscroll-behavior: none;
 }
 .RollDate__calendar__days {
   grid-template-columns: repeat(7, 1fr);
@@ -300,8 +323,10 @@
   transition: transform 0.3s, opacity 0.3s;
 }
 .RollDate__calendar__months, .RollDate__calendar__years {
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
+  width: 100%;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  justify-items: stretch;
+  gap: var(--rd-cal-month-gap);
   opacity: 0;
   pointer-events: none;
   transition: transform 0.3s, opacity 0.3s;
@@ -330,14 +355,12 @@
 .RollDate__calendar__day:hover:not(:disabled) {
   border-color: var(--rd-hover-border);
 }
-.RollDate__calendar__day:focus {
+.RollDate__calendar__day:focus, .RollDate__calendar__day:focus-visible {
   outline: none;
+  box-shadow: none;
 }
-.RollDate__calendar__day:focus-visible {
+.RollDate__calendar__day:focus-visible:not(:disabled) {
   border-color: var(--rd-accent-strong);
-  outline: 2px solid var(--rd-accent);
-  outline-offset: 2px;
-  box-shadow: 0 0 0 2px var(--rd-bg);
 }
 .RollDate__calendar__day:disabled {
   opacity: 1;
@@ -445,8 +468,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 59.75px;
-  min-height: 59.75px;
+  width: 100%;
+  max-width: none;
+  aspect-ratio: auto;
+  height: var(--rd-cal-month-cell);
+  min-height: var(--rd-cal-month-cell);
   font-size: 14px;
   color: var(--rd-text-secondary);
   cursor: pointer;
@@ -744,6 +770,9 @@
     width: min(100vw - 16px, 360px);
     padding: 6px 8px;
     --rd-time-item-h: 28px;
+    --rd-cal-body-h: 226px;
+    --rd-cal-weekday-h: 22px;
+    --rd-cal-weekday-mb: 6px;
   }
   .RollDate__container.RollDate__has-time.RollDate__time-position_right, .RollDate__container.RollDate__has-time.RollDate__time-position_bottom {
     --rd-time-visible: 3;
@@ -789,11 +818,6 @@
   .RollDate__header__year, .RollDate__header__month {
     font-size: 13px;
   }
-  .RollDate__calendar__body {
-    flex: 0 0 226px;
-    height: 226px;
-    min-height: 226px;
-  }
   .RollDate__calendar__header {
     margin-bottom: 6px;
   }
@@ -806,8 +830,6 @@
     font-size: 13px;
   }
   .RollDate__calendar__month, .RollDate__calendar__year {
-    height: 53.5px;
-    min-height: 53.5px;
     font-size: 13px;
   }
   .RollDate__calendar__button {

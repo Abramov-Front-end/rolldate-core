@@ -34,7 +34,7 @@ Need a full event calendar instead of a date picker?
 - **Popup or inline** — attach to an input or render inside any container
 - **Three themes** — `main` (default), `dark`, `light` — no extra CSS framework
 - **Small footprint** — ~54 KB minified JS (~14 KB gzip); no React/Vue/jQuery dependency
-- **Runtime API** — open/close, disable dates, highlights, range presets, `goToDate`, `getValue` / `setValue`
+- **Runtime API** — open/close, `enabledDates` / `disabledDates` rules, highlights, range presets, `goToDate`, `getValue` / `setValue`
 
 ## Install
 
@@ -104,8 +104,11 @@ new RollDate('#date-input', {
   use12Hour: true,
   timePosition: 'right',  // 'bottom' — mobile always bottom
   timeStep: 5,
+  scrollSpeed: 1,       // 0.7 slower, 1.5 faster, 0 = arrows/keyboard only
   minDate: '01.01.2020',
   maxDate: '31.12.2030',
+  enabledDates: [{ repeat: 'weekly', weekdays: [0, 6] }], // allowlist; omit to allow all
+  disabledDates: ['26.12.2026'], // denylist, always wins
   closeOnSelect: true,
   highlightDates: [
     '12.08.2026',
@@ -135,6 +138,8 @@ new RollDate('#date-input', {
 });
 ```
 
+Priority: `minDate` / `maxDate` → `enabledDates` (allowlist, if set) → `disabledDates` (denylist, always wins). ISO `YYYY-MM-DD` is a local calendar day, not UTC.
+
 ## Runtime methods (selection & navigation)
 
 | Method | Description |
@@ -146,10 +151,19 @@ new RollDate('#date-input', {
 | `setValue(value)` | Set selection; `null` clears |
 | `getViewMonth()` | `{ year, month }` — visible month after scroll |
 | `getViewDate()` | First day of visible month |
-| `setDisabledDates` / `disableDate` / `enableDate` | Disabled dates |
+| `setEnabledDates(rules?)` | Replace the allowlist; `undefined` turns it off, `[]` blocks every date. Non-array values are ignored |
+| `setDisabledDates` / `disableDate` / `enableDate` | Denylist rules. `enableDate` removes only an exact date entry — it cannot override weekly/monthly/range/callback rules |
 | `setHighlightDates` / `highlightDate` / `unhighlightDate` | Day markers |
 
 Full API: https://rolldate.dev/docs
+
+## What's new in 1.3.0
+
+- **`enabledDates` allowlist** — exact dates, inclusive ranges, weekly/monthly repeats, or callbacks. Omit the option to allow all dates; `[]` blocks every date
+- **`setEnabledDates`** — change the allowlist at runtime without recreating the picker (`undefined` turns it off). Invalid non-array values keep the current allowlist
+- **`disabledDates`** — same rule types as the allowlist, and always wins (so you can allow weekends and close a holiday)
+- **`scrollSpeed`** — wheel/touch speed (`1` default; `0` = arrows and keyboard only)
+- Calendar scroll no longer jumps the page, trims the popup, or snaps back to the current month when availability rules change
 
 ## What's new in 1.2.4
 

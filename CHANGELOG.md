@@ -2,6 +2,33 @@
 
 All notable changes to `@rolldate/core` are documented here.
 
+## [Unreleased]
+
+## [1.3.0] — 2026-09-17
+
+### Added
+
+- **`enabledDates`** — allowlist of exact dates, inclusive ranges, weekly/monthly repeats, or callbacks. When the option is set, every other date is blocked. `[]` blocks all dates.
+- **`setEnabledDates(rules)`** — replace the allowlist at runtime (`undefined` turns it off, `[]` blocks every date). Dates that become unavailable are dropped from the selection and `selectDate` runs. Non-array values are ignored and keep the current allowlist.
+- **`scrollSpeed`** — wheel/touch speed multiplier (`1` is the current default; `0.7` / `1.5` slow down or speed up; `0` disables scroll, arrows and keyboard still work)
+
+### Changed
+
+- **`disabledDates`** — same rule types as `enabledDates`; it remains a denylist and always wins over the allowlist
+- **ISO `YYYY-MM-DD`** — parsed as a local calendar day in rules and `parseDate` (not UTC midnight)
+- **Month/year view** — calendar shell keeps the day-view height; month and year cells fill the row width at that height
+- **Calendar wheel** — slightly slower, same original step animation
+
+### Fixed
+
+- **Availability runtime** — `setEnabledDates` / `setDisabledDates` / `disableDate` / `enableDate` update visible days in place, so the calendar does not jump back to the current month
+- **Keyboard days** — no default/white focus outline; the focused day keeps the accent border
+- **Header month buttons** — next/prev scroll to that month instead of pinning the previous active day (e.g. the 16th) on screen
+- **Popup down-scroll** — day window no longer trims down to a single viewport (blank calendar)
+- **Inline / popup page jump** — calendar body is not a native scrollport, so a half-visible picker does not yank the page or a neighboring instance
+- **Haptic tick** — `navigator.vibrate` runs only on touch-primary devices, so desktop wheel scroll no longer trips Chrome’s vibrate intervention
+- **Month/year grid** — virtualized rows stay aligned (January in column 1; years keep a stable 4-column start) and load in whole rows instead of shifting cells sideways
+
 ## [1.2.4] — 2026-09-15
 
 ### Added
