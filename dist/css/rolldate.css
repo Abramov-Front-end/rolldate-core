@@ -31,6 +31,8 @@
   --rd-range-strong: #7c3aed;
   --rd-range-muted: #3d3558;
   --rd-button-icon: #cbd5e1;
+  --rd-on-accent: #fff;
+  --rd-highlight-dot: var(--rd-accent);
   background: var(--rd-bg);
   border: 1px solid var(--rd-border);
   box-sizing: border-box;
@@ -61,6 +63,8 @@
   --rd-range-strong: #7c3aed;
   --rd-range-muted: #3d3558;
   --rd-button-icon: #cbd5e1;
+  --rd-on-accent: #fff;
+  --rd-highlight-dot: var(--rd-accent);
 }
 .RollDate__container.RollDate__theme_dark {
   --rd-time-item-h: 28px;
@@ -82,6 +86,8 @@
   --rd-range-strong: #7c3aed;
   --rd-range-muted: #3d3558;
   --rd-button-icon: #fff;
+  --rd-on-accent: #fff;
+  --rd-highlight-dot: var(--rd-accent);
 }
 .RollDate__container.RollDate__theme_dark .RollDate__time__viewport::before {
   border-color: var(--rd-hover-border);
@@ -118,6 +124,8 @@
   --rd-range-strong: #6d28d9;
   --rd-range-muted: #ede9fe;
   --rd-button-icon: #334155;
+  --rd-on-accent: #fff;
+  --rd-highlight-dot: var(--rd-accent);
 }
 .RollDate__container.RollDate__theme_light .RollDate__time__viewport::before {
   border-color: var(--rd-hover-border);
@@ -373,7 +381,7 @@
 }
 .RollDate__calendar__day--range-first, .RollDate__calendar__day--range-last {
   background: var(--rd-range-strong);
-  color: #fff;
+  color: var(--rd-on-accent);
   border-color: transparent;
   font-weight: 600;
 }
@@ -382,7 +390,7 @@
   border-color: transparent;
 }
 .RollDate__calendar__day--range-first .RollDate__calendar__day-dot:not(.RollDate__calendar__day-dot--custom):not(.RollDate__calendar__day-dot--more), .RollDate__calendar__day--range-last .RollDate__calendar__day-dot:not(.RollDate__calendar__day-dot--custom):not(.RollDate__calendar__day-dot--more) {
-  background: #fff;
+  background: var(--rd-on-accent);
 }
 .RollDate__calendar__day--range-selected {
   background: var(--rd-range-muted);
@@ -402,7 +410,7 @@
 }
 .RollDate__calendar__day--today {
   background: var(--rd-accent);
-  color: #fff;
+  color: var(--rd-on-accent);
   border-color: transparent;
 }
 .RollDate__calendar__day--today:hover {
@@ -411,7 +419,7 @@
 }
 .RollDate__calendar__day--today.RollDate__calendar__day--range-first, .RollDate__calendar__day--today.RollDate__calendar__day--range-last, .RollDate__calendar__day--today.RollDate__calendar__day--range-selected {
   background: var(--rd-accent);
-  color: #fff;
+  color: var(--rd-on-accent);
 }
 .RollDate__calendar__day--today.RollDate__calendar__day--range-first:hover, .RollDate__calendar__day--today.RollDate__calendar__day--range-last:hover, .RollDate__calendar__day--today.RollDate__calendar__day--range-selected:hover {
   background: var(--rd-accent-strong);
@@ -487,7 +495,7 @@
 }
 .RollDate__calendar__month--current, .RollDate__calendar__year--current {
   background: var(--rd-accent);
-  color: white;
+  color: var(--rd-on-accent);
 }
 .RollDate__calendar__month--current:hover, .RollDate__calendar__year--current:hover {
   border: 2px solid var(--rd-accent-strong);
@@ -621,12 +629,12 @@
 .RollDate__footer__button--primary {
   border-color: transparent;
   background: var(--rd-accent-strong);
-  color: #fff;
+  color: var(--rd-on-accent);
 }
 .RollDate__footer__button--primary:hover {
   border-color: transparent;
   background: var(--rd-accent);
-  color: #fff;
+  color: var(--rd-on-accent);
 }
 .RollDate__time {
   display: flex;
@@ -676,7 +684,7 @@
 }
 .RollDate__time__segment-btn--active {
   background: var(--rd-accent-strong);
-  color: #fff;
+  color: var(--rd-on-accent);
 }
 .RollDate__time__picker {
   display: flex;
@@ -757,7 +765,7 @@
 }
 .RollDate__theme_main .RollDate__calendar__day--today:not(.RollDate__calendar__day--range-first):not(.RollDate__calendar__day--range-last):not(.RollDate__calendar__day--range-selected) {
   background: var(--rd-accent-strong);
-  color: #fff;
+  color: var(--rd-on-accent);
   border-color: transparent;
 }
 .RollDate__theme_main .RollDate__calendar__day--today:not(.RollDate__calendar__day--range-first):not(.RollDate__calendar__day--range-last):not(.RollDate__calendar__day--range-selected):hover {

@@ -157,6 +157,11 @@ Priority: `minDate` / `maxDate` → `enabledDates` (allowlist, if set) → `disa
 
 Full API: https://rolldate.dev/docs
 
+## What's new in 1.3.1
+
+- **`--rd-on-accent`** — override text/icon color on filled accent, range endpoints, and primary buttons
+- Theme colors are CSS variables on `.RollDate__container` — see [CSS variables](https://rolldate.dev/docs/css-variables)
+
 ## What's new in 1.3.0
 
 - **`enabledDates` allowlist** — exact dates, inclusive ranges, weekly/monthly repeats, or callbacks. Omit the option to allow all dates; `[]` blocks every date

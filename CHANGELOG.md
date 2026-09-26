@@ -4,6 +4,13 @@ All notable changes to `@rolldate/core` are documented here.
 
 ## [Unreleased]
 
+## [1.3.1] — 2026-09-26
+
+### Added
+
+- **`--rd-on-accent`** — text and icon color on filled accent, range endpoints, and primary buttons (was hardcoded white)
+- Theme colors are fully overridable via `--rd-*` color custom properties on `.RollDate__container`
+
 ## [1.3.0] — 2026-09-17
 
 ### Added
