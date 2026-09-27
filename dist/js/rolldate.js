@@ -561,13 +561,13 @@ var RollDate = (function () {
                 : '';
 
             const footerHtml = this.hasFooter ? `
-            <div class="RollDate__footer">
+            <div class="RollDate__footer" data-rd-slot="footer">
                 <div class="RollDate__footer__buttons"></div>
             </div>
         ` : '';
 
             this.$container.innerHTML = `
-            <div class="RollDate__content">
+            <div class="RollDate__content" data-rd-slot="content">
               <div class="RollDate__calendar">
                 <div class="RollDate__header">
                     <div class="RollDate__calendar__switcher">
@@ -618,6 +618,10 @@ var RollDate = (function () {
                 header += `<div class="RollDate__calendar__header__weekday">${weekDays[i % 7]}</div>`;
             }
             return header
+        }
+
+        highlightDotsHtml(colors = []) {
+            return this.#highlightDots(colors)
         }
 
         #highlightDots(colors = [], maxVisible = 5) {
@@ -1898,6 +1902,7 @@ var RollDate = (function () {
         #disabledMatchers = []
         #enabledMatchers = null
         #highlightDateMap = new Map()
+        #presetButtons = []
         #docClickHandler = null
         #openTriggers = []
         #activeDateStamp = null
@@ -2080,6 +2085,7 @@ var RollDate = (function () {
         }
 
         #notifySelectionChange() {
+            this.#syncPresetState();
             if (this.options.selectType === 'single') {
                 this.options.selectDate(this.#selectedDates[0] || null);
                 return
@@ -2096,16 +2102,61 @@ var RollDate = (function () {
             }
         }
 
+        #dayFromElement(dayEl) {
+            return new Date(
+                Number(dayEl.dataset.year),
+                Number(dayEl.dataset.month),
+                Number(dayEl.dataset.day)
+            )
+        }
+
+        #refreshHighlightView() {
+            if (!this.$container) return
+
+            this.$container.querySelectorAll('.RollDate__calendar__day').forEach(dayEl => {
+                const meta = this.#getHighlightMeta(this.#dayFromElement(dayEl));
+                const nextHtml = meta ? this.render.highlightDotsHtml(meta.colors) : '';
+                const existing = dayEl.querySelector('.RollDate__calendar__day-dots');
+                if (!nextHtml) {
+                    existing?.remove();
+                    return
+                }
+                if (existing) {
+                    existing.outerHTML = nextHtml;
+                } else {
+                    dayEl.insertAdjacentHTML('beforeend', nextHtml);
+                }
+            });
+        }
+
+        #refreshMonthYearAvailability() {
+            this.$container.querySelectorAll('.RollDate__calendar__month').forEach(el => {
+                const year = Number(el.dataset.year);
+                const month = Number(el.dataset.month);
+                const start = new Date(year, month, 1);
+                const end = new Date(year, month + 1, 0);
+                const disabled = Boolean(
+                    (this.options.minDate && end < this.options.minDate) ||
+                    (this.options.maxDate && start > this.options.maxDate)
+                );
+                el.classList.toggle('RollDate__calendar__month--disabled', disabled);
+            });
+
+            this.$container.querySelectorAll('.RollDate__calendar__year').forEach(el => {
+                const year = Number(el.dataset.year);
+                const disabled = Boolean(
+                    (this.options.minDate && year < this.options.minDate.getFullYear()) ||
+                    (this.options.maxDate && year > this.options.maxDate.getFullYear())
+                );
+                el.classList.toggle('RollDate__calendar__year--disabled', disabled);
+            });
+        }
+
         #refreshAvailabilityView() {
             if (!this.$container) return
 
             this.$container.querySelectorAll('.RollDate__calendar__day').forEach(dayEl => {
-                const date = new Date(
-                    Number(dayEl.dataset.year),
-                    Number(dayEl.dataset.month),
-                    Number(dayEl.dataset.day)
-                );
-                const disabled = this.#isDateDisabled(date);
+                const disabled = this.#isDateDisabled(this.#dayFromElement(dayEl));
                 dayEl.classList.toggle('RollDate__calendar__day--disabled', disabled);
                 dayEl.disabled = disabled;
                 if (disabled) {
@@ -2113,6 +2164,8 @@ var RollDate = (function () {
                     dayEl.tabIndex = -1;
                 }
             });
+
+            this.#refreshMonthYearAvailability();
 
             if (this.period === 'day') {
                 this.#paintSelection();
@@ -2149,24 +2202,40 @@ var RollDate = (function () {
                 : [];
 
             this.dom.$footer_buttons.innerHTML = '';
+            const groups = {};
+            const groupFor = (position) => {
+                if (!groups[position]) {
+                    const group = document.createElement('div');
+                    group.className = `RollDate__footer__group RollDate__footer__group--${position}`;
+                    groups[position] = group;
+                }
+                return groups[position]
+            };
+
             buttons.forEach((cfg) => {
                 if (!cfg?.text) return
                 const btn = document.createElement('button');
                 btn.type = 'button';
                 btn.className = 'RollDate__footer__button';
-                if (cfg.variant === 'primary') {
-                    btn.classList.add('RollDate__footer__button--primary');
-                } else if (cfg.variant === 'secondary') {
-                    btn.classList.add('RollDate__footer__button--secondary');
+                if (['primary', 'secondary', 'link'].includes(cfg.variant)) {
+                    btn.classList.add(`RollDate__footer__button--${cfg.variant}`);
                 }
+                if (typeof cfg.className === 'string' && cfg.className.trim()) {
+                    btn.classList.add(...cfg.className.trim().split(/\s+/));
+                }
+                if (cfg.ariaLabel) btn.setAttribute('aria-label', cfg.ariaLabel);
+                if (cfg.action) btn.dataset.action = cfg.action;
                 btn.textContent = cfg.text;
                 btn.addEventListener('click', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     this.#handleFooterButton(cfg);
                 });
-                this.dom.$footer_buttons.append(btn);
+                groupFor(cfg.position === 'left' ? 'left' : 'right').append(btn);
             });
+
+            if (groups.left) this.dom.$footer_buttons.append(groups.left);
+            if (groups.right) this.dom.$footer_buttons.append(groups.right);
         }
 
         #handleFooterButton(cfg) {
@@ -2176,6 +2245,10 @@ var RollDate = (function () {
             }
             if (cfg.action === 'clear') {
                 this.clearSelection();
+                return
+            }
+            if (cfg.action === 'close') {
+                this.close({ restoreFocus: true });
                 return
             }
             if (typeof cfg.onClick === 'function') {
@@ -2194,36 +2267,45 @@ var RollDate = (function () {
             if (!bar) {
                 bar = document.createElement('div');
                 bar.className = 'RollDate__presets';
-                const footer = this.$container.querySelector('.RollDate__footer');
-                const calendar = this.$container.querySelector('.RollDate__calendar');
-                if (footer) footer.before(bar);
-                else if (calendar) calendar.after(bar);
+                bar.dataset.rdSlot = 'presets';
+                bar.setAttribute('role', 'group');
+                if (this.options.presetsLabel) bar.setAttribute('aria-label', this.options.presetsLabel);
+                this.$container.querySelector('.RollDate__content').after(bar);
             }
 
             bar.innerHTML = '';
-            presets.forEach(preset => {
+            this.#presetButtons = [];
+            presets.forEach((preset, index) => {
                 if (!preset?.label || typeof preset.getRange !== 'function') return
 
                 const btn = document.createElement('button');
                 btn.type = 'button';
                 btn.className = 'RollDate__presets__button';
-                btn.textContent = preset.label;
+                btn.dataset.presetId = preset.id || String(index);
+                if (preset.icon) btn.dataset.icon = preset.icon;
+                btn.setAttribute('aria-pressed', 'false');
+                const label = document.createElement('span');
+                label.className = 'RollDate__presets__label';
+                label.textContent = preset.label;
+                btn.append(label);
                 btn.addEventListener('click', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     this.#applyRangePreset(preset);
                 });
                 bar.append(btn);
+                this.#presetButtons.push({ preset, btn });
             });
 
             if (bar.childElementCount) {
                 this.$container.classList.add('RollDate__has-presets');
             }
+            this.#syncPresetState();
         }
 
-        #applyRangePreset(preset) {
+        #resolvePresetRange(preset) {
             const result = preset.getRange(this);
-            if (!Array.isArray(result) || result.length < 2) return
+            if (!Array.isArray(result) || result.length < 2) return null
 
             const normalized = result
                 .slice(0, 2)
@@ -2232,10 +2314,33 @@ var RollDate = (function () {
                 .map(date => this.#clampDateToRange(date, this.options.minDate, this.options.maxDate))
                 .filter(date => !this.#isDateDisabled(date));
 
-            if (normalized.length < 2) return
+            if (normalized.length < 2) return null
 
             let [start, end] = normalized;
             if (start > end) [start, end] = [end, start];
+            return [start, end]
+        }
+
+        #syncPresetState() {
+            if (!this.#presetButtons.length) return
+            const [start, end] = this.#selectedDates;
+            const selected = start && end
+                ? `${this.#toDateStamp(start)}:${this.#toDateStamp(end)}`
+                : '';
+
+            this.#presetButtons.forEach(({ preset, btn }) => {
+                const range = selected ? this.#resolvePresetRange(preset) : null;
+                const active = !!range &&
+                    `${this.#toDateStamp(range[0])}:${this.#toDateStamp(range[1])}` === selected;
+                btn.classList.toggle('RollDate__presets__button--active', active);
+                btn.setAttribute('aria-pressed', String(active));
+            });
+        }
+
+        #applyRangePreset(preset) {
+            const range = this.#resolvePresetRange(preset);
+            if (!range) return
+            const [start, end] = range;
 
             this.#selectedDates = [
                 this.#applyTimeToDate(start),
@@ -2311,6 +2416,8 @@ var RollDate = (function () {
                 timePosition: 'right',
                 footerButtons: [],
                 rangePresets: [],
+                presetsLabel: '',
+                containerClass: '',
                 hapticFeedback: true,
                 scrollSpeed: 1,
                 ...options
@@ -2393,6 +2500,9 @@ var RollDate = (function () {
 
             this.$container = document.createElement('div');
             this.$container.className = `RollDate__container RollDate__calendar__type--days RollDate__theme_${this.options.theme}`;
+            if (typeof this.options.containerClass === 'string' && this.options.containerClass.trim()) {
+                this.$container.classList.add(...this.options.containerClass.trim().split(/\s+/));
+            }
 
             this.#disableInputAssist(this.$trigger);
             this.#disableInputAssist(this.$startInput);
@@ -2830,6 +2940,7 @@ var RollDate = (function () {
                             }
                         }
 
+                        this.#syncPresetState();
                         this.options.selectDate([...this.#selectedDates]);
                         this.#updateInputValue();
                         this.#activeDateStamp = this.#toDateStamp(date);
@@ -3339,7 +3450,7 @@ var RollDate = (function () {
         setHighlightDates(dates = []) {
             this.options.highlightDates = Array.isArray(dates) ? dates : [];
             this.#highlightDateMap = this.#buildHighlightDateMap(this.options.highlightDates);
-            this.#updateView(this.#viewNumber);
+            this.#refreshHighlightView();
         }
 
         highlightDate(dateLike, color) {
@@ -3357,7 +3468,7 @@ var RollDate = (function () {
             existing.push(nextColor ?? null);
             this.#highlightDateMap.set(stamp, existing);
             this.options.highlightDates = this.#highlightMapToOptionsArray();
-            this.#updateView(this.#viewNumber);
+            this.#refreshHighlightView();
         }
 
         unhighlightDate(dateLike, color) {
@@ -3387,7 +3498,7 @@ var RollDate = (function () {
             }
 
             this.options.highlightDates = this.#highlightMapToOptionsArray();
-            this.#updateView(this.#viewNumber);
+            this.#refreshHighlightView();
         }
 
         isDateHighlighted(dateLike) {
@@ -3518,6 +3629,7 @@ var RollDate = (function () {
                     'RollDate__calendar__day--range-selected'
                 );
             });
+            this.#syncPresetState();
 
             if (!this.#selectedDates.length) return
 
@@ -3702,7 +3814,7 @@ var RollDate = (function () {
             }
 
             const wasOpen = this.$container.style.display !== 'none';
-            this.$container.style.display = 'block';
+            this.$container.style.display = '';
 
             if (this.mode === 'popup') {
                 this.#activeDateStamp = this.#toDateStamp(this.#resolveDefaultActiveDate());

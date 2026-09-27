@@ -36,10 +36,16 @@ export type RollDateRule =
 export interface RollDateFooterButton {
   /** Button label */
   text: string
-  /** Visual style */
-  variant?: 'primary' | 'secondary'
+  /** Visual style; `'link'` is text with a dashed underline */
+  variant?: 'primary' | 'secondary' | 'link'
+  /** Footer side. Left buttons are grouped at the start, the rest at the end. Default `'right'` */
+  position?: 'left' | 'right'
+  /** Extra CSS classes for theming */
+  className?: string
+  /** Accessible name when the visible text is not enough */
+  ariaLabel?: string
   /** Built-in action */
-  action?: 'today' | 'clear'
+  action?: 'today' | 'clear' | 'close'
   /** Custom click handler; receives the picker instance */
   onClick?: (picker: RollDate) => void
 }
@@ -61,6 +67,10 @@ export interface RollDateViewMonth {
 export interface RollDateRangePreset {
   /** Button label */
   label: string
+  /** Stable id, rendered as `data-preset-id` for theming. Defaults to the array index */
+  id?: string
+  /** Icon id, rendered as `data-icon`; themes map it to an image */
+  icon?: string
   /** Returns `[start, end]`. Use `picker.getViewMonth()` / `picker.selectedDates` for context. */
   getRange: (picker: RollDate) => [RollDateDateLike, RollDateDateLike] | RollDateDateLike[]
 }
@@ -96,6 +106,10 @@ export interface RollDateOptions {
   highlightDates?: (RollDateDateLike | RollDateHighlightDate)[]
   /** Quick range buttons (range mode). Use `picker.getViewMonth()` for the scrolled month. */
   rangePresets?: RollDateRangePreset[]
+  /** Accessible name for the presets group */
+  presetsLabel?: string
+  /** Extra classes on `.RollDate__container`, e.g. a layout theme combined with a color theme */
+  containerClass?: string
   closeOnSelect?: boolean
   /** CSS selector for an external open control (popup mode) */
   triggerSelector?: string

@@ -114,23 +114,9 @@ new RollDate('#date-input', {
     '12.08.2026',
     { date: '15.08.2026', colors: ['#22c55e', '#ef4444'] }
   ],
-  rangePresets: [
-    {
-      label: '7 days',
-      getRange(picker) {
-        const start = picker.selectedDates[0] ?? picker.getViewDate();
-        const end = new Date(start);
-        end.setDate(end.getDate() + 6);
-        return [start, end];
-      }
-    },
-    {
-      label: 'This month',
-      getRange(picker) {
-        const { year, month } = picker.getViewMonth();
-        return [new Date(year, month, 1), new Date(year, month + 1, 0)];
-      }
-    }
+  footerButtons: [
+    { text: 'Clear', action: 'clear', variant: 'link', position: 'left' },
+    { text: 'Done', variant: 'primary', onClick: (picker) => picker.close() }
   ],
   selectDate(date) {
     console.log(date);
@@ -139,6 +125,36 @@ new RollDate('#date-input', {
 ```
 
 Priority: `minDate` / `maxDate` → `enabledDates` (allowlist, if set) → `disabledDates` (denylist, always wins). ISO `YYYY-MM-DD` is a local calendar day, not UTC.
+
+## Range presets plugin
+
+Optional file with 28 ready ranges (EN / UK labels). The core only renders `rangePresets`; the plugin builds them.
+
+```js
+import RollDate from '@rolldate/core';
+import { presets, lastN } from '@rolldate/core/presets';
+
+new RollDate('#report', {
+  selectType: 'range',
+  presetsLabel: 'Quick select',
+  rangePresets: [
+    ...presets(['today', 'thisWeek', 'last7', 'last30', 'thisMonth', 'lastQuarter'], { locale: 'en' }),
+    lastN(6, 'month')
+  ]
+});
+```
+
+Browser: `<script src=".../dist/js/rolldate-presets.min.js"></script>` → `window.RollDatePresets.presets(...)`. Custom presets still work: `{ label, getRange(picker) → [start, end], id?, icon? }`. All ids: https://rolldate.dev/docs#presets
+
+## Layout themes with CSS
+
+Container children are stable slots — `[data-rd-slot="content"]`, `[data-rd-slot="presets"]`, `[data-rd-slot="footer"]` — so a theme can move presets to a sidebar or above the calendar with CSS grid only. Add your layout class with `containerClass` and keep any color theme:
+
+```js
+new RollDate('#report', { theme: 'dark', containerClass: 'my-aside', selectType: 'range', rangePresets: presets() });
+```
+
+Preset buttons expose `data-preset-id`, `data-icon`, `.RollDate__presets__button--active` and `aria-pressed`.
 
 ## Runtime methods (selection & navigation)
 
@@ -156,6 +172,14 @@ Priority: `minDate` / `maxDate` → `enabledDates` (allowlist, if set) → `disa
 | `setHighlightDates` / `highlightDate` / `unhighlightDate` | Day markers |
 
 Full API: https://rolldate.dev/docs
+
+## What's new in 1.4.0
+
+- **Presets plugin** — `@rolldate/core/presets`: 28 ready ranges (today, weeks, rolling days, months, quarters, years), EN/UK labels, `lastN` / `nextN`
+- **Active preset** — the matching preset button is highlighted and gets `aria-pressed`
+- **Layout slots** — `data-rd-slot` on content / presets / footer, `containerClass` option: CSS-only layout themes (e.g. presets sidebar)
+- **Footer buttons** — `variant: 'link'`, `position: 'left' | 'right'`, `action: 'close'`, `className`, `ariaLabel`
+- **Live updates** — highlight methods update dots in place; the calendar no longer rebuilds or jumps
 
 ## What's new in 1.3.1
 
@@ -209,6 +233,7 @@ See [CHANGELOG.md](./CHANGELOG.md).
 | `dist/js/rolldate.js` | Full script |
 | `dist/css/rolldate.min.css` | Minified styles |
 | `dist/css/rolldate.css` | Full styles |
+| `dist/js/rolldate-presets.js` / `.mjs` / `.min.js` | Optional range presets plugin (`@rolldate/core/presets`) |
 | `assets/demo/rolldate-demo.webm` | Preview video (WebM) |
 | `assets/demo/rolldate-demo.gif` | Preview animation (GIF) |
 
