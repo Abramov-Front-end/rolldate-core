@@ -7,10 +7,8 @@ All notable changes to `@rolldate/core` are documented here.
 ### Added
 
 - **Presets plugin** — `@rolldate/core/presets` (`dist/js/rolldate-presets.{js,mjs,min.js}`, global `RollDatePresets`): `presets(ids, { locale, labels, startWeekFromMonday, now })` with 28 ranges, EN/UK labels, and `lastN` / `nextN(n, 'day' | 'week' | 'month')`
-- **`rangePresets[].id` / `icon`** — rendered as `data-preset-id` / `data-icon`; the preset matching the current range gets `RollDate__presets__button--active` and `aria-pressed="true"`
+- **`rangePresets[].id`** — rendered as `data-preset-id`; the preset matching the current range gets `RollDate__presets__button--active` and `aria-pressed="true"`
 - **`presetsLabel`** — accessible name for the presets group (`role="group"`)
-- **Layout slots** — `data-rd-slot="content" | "presets" | "footer"` on the container children
-- **`containerClass`** — extra classes on `.RollDate__container` for CSS-only layout themes
 - **`footerButtons[].variant: 'link'`** — text button with a dashed underline
 - **`footerButtons[].position`** — `'left'` | `'right'`; left buttons group at the start of the footer, the rest at the end
 - **`footerButtons[].className` / `ariaLabel`** and built-in **`action: 'close'`**
@@ -18,7 +16,8 @@ All notable changes to `@rolldate/core` are documented here.
 ### Changed
 
 - The presets bar is always a direct child of the container (it was placed inside the calendar content when there was no footer)
-- `open()` no longer forces `display: block`, so the container keeps its CSS layout (flex by default, or a theme grid) in popup mode
+- Built-in themes keep the presets bar below the calendar
+- `open()` no longer forces `display: block`, so the container keeps its CSS layout in popup mode
 
 ### Fixed
 

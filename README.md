@@ -144,17 +144,9 @@ new RollDate('#report', {
 });
 ```
 
-Browser: `<script src=".../dist/js/rolldate-presets.min.js"></script>` → `window.RollDatePresets.presets(...)`. Custom presets still work: `{ label, getRange(picker) → [start, end], id?, icon? }`. All ids: https://rolldate.dev/docs#presets
+Browser: `<script src=".../dist/js/rolldate-presets.min.js"></script>` → `window.RollDatePresets.presets(...)`. Custom presets still work: `{ label, getRange(picker) → [start, end], id? }`. All ids: https://rolldate.dev/docs#presets
 
-## Layout themes with CSS
-
-Container children are stable slots — `[data-rd-slot="content"]`, `[data-rd-slot="presets"]`, `[data-rd-slot="footer"]` — so a theme can move presets to a sidebar or above the calendar with CSS grid only. Add your layout class with `containerClass` and keep any color theme:
-
-```js
-new RollDate('#report', { theme: 'dark', containerClass: 'my-aside', selectType: 'range', rangePresets: presets() });
-```
-
-Preset buttons expose `data-preset-id`, `data-icon`, `.RollDate__presets__button--active` and `aria-pressed`.
+Built-in themes keep the presets bar below the calendar. The matching button gets `.RollDate__presets__button--active` and `aria-pressed`.
 
 ## Runtime methods (selection & navigation)
 
@@ -177,7 +169,7 @@ Full API: https://rolldate.dev/docs
 
 - **Presets plugin** — `@rolldate/core/presets`: 28 ready ranges (today, weeks, rolling days, months, quarters, years), EN/UK labels, `lastN` / `nextN`
 - **Active preset** — the matching preset button is highlighted and gets `aria-pressed`
-- **Layout slots** — `data-rd-slot` on content / presets / footer, `containerClass` option: CSS-only layout themes (e.g. presets sidebar)
+- Built-in themes keep range presets **below** the calendar
 - **Footer buttons** — `variant: 'link'`, `position: 'left' | 'right'`, `action: 'close'`, `className`, `ariaLabel`
 - **Live updates** — highlight methods update dots in place; the calendar no longer rebuilds or jumps
 

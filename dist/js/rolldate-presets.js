@@ -21,16 +21,15 @@
     };
 
     const RANGES = {
-        today: { icon: 'day', range: (t) => [t, t] },
-        yesterday: { icon: 'day', range: (t) => [addDays(t, -1), addDays(t, -1)] },
-        tomorrow: { icon: 'day', range: (t) => [addDays(t, 1), addDays(t, 1)] },
+        today: { range: (t) => [t, t] },
+        yesterday: { range: (t) => [addDays(t, -1), addDays(t, -1)] },
+        tomorrow: { range: (t) => [addDays(t, 1), addDays(t, 1)] },
 
-        thisWeek: { icon: 'week', range: (t, m) => [startOfWeek(t, m), addDays(startOfWeek(t, m), 6)] },
-        lastWeek: { icon: 'week', range: (t, m) => [addDays(startOfWeek(t, m), -7), addDays(startOfWeek(t, m), -1)] },
-        nextWeek: { icon: 'week', range: (t, m) => [addDays(startOfWeek(t, m), 7), addDays(startOfWeek(t, m), 13)] },
-        weekToDate: { icon: 'week', range: (t, m) => [startOfWeek(t, m), t] },
+        thisWeek: { range: (t, m) => [startOfWeek(t, m), addDays(startOfWeek(t, m), 6)] },
+        lastWeek: { range: (t, m) => [addDays(startOfWeek(t, m), -7), addDays(startOfWeek(t, m), -1)] },
+        nextWeek: { range: (t, m) => [addDays(startOfWeek(t, m), 7), addDays(startOfWeek(t, m), 13)] },
+        weekToDate: { range: (t, m) => [startOfWeek(t, m), t] },
         weekend: {
-            icon: 'weekend',
             range: (t) => {
                 const day = t.getDay();
                 if (day === 0) return [addDays(t, -1), t]
@@ -39,41 +38,39 @@
             }
         },
 
-        last7: { icon: 'past', range: (t) => [addDays(t, -6), t] },
-        last14: { icon: 'past', range: (t) => [addDays(t, -13), t] },
-        last30: { icon: 'past', range: (t) => [addDays(t, -29), t] },
-        last90: { icon: 'past', range: (t) => [addDays(t, -89), t] },
-        next7: { icon: 'future', range: (t) => [t, addDays(t, 6)] },
-        next14: { icon: 'future', range: (t) => [t, addDays(t, 13)] },
-        next30: { icon: 'future', range: (t) => [t, addDays(t, 29)] },
+        last7: { range: (t) => [addDays(t, -6), t] },
+        last14: { range: (t) => [addDays(t, -13), t] },
+        last30: { range: (t) => [addDays(t, -29), t] },
+        last90: { range: (t) => [addDays(t, -89), t] },
+        next7: { range: (t) => [t, addDays(t, 6)] },
+        next14: { range: (t) => [t, addDays(t, 13)] },
+        next30: { range: (t) => [t, addDays(t, 29)] },
 
-        thisMonth: { icon: 'month', range: (t) => [addMonths(t, 0), endOfMonth(t)] },
-        lastMonth: { icon: 'month', range: (t) => [addMonths(t, -1), endOfMonth(addMonths(t, -1))] },
-        nextMonth: { icon: 'month', range: (t) => [addMonths(t, 1), endOfMonth(addMonths(t, 1))] },
-        monthToDate: { icon: 'month', range: (t) => [addMonths(t, 0), t] },
+        thisMonth: { range: (t) => [addMonths(t, 0), endOfMonth(t)] },
+        lastMonth: { range: (t) => [addMonths(t, -1), endOfMonth(addMonths(t, -1))] },
+        nextMonth: { range: (t) => [addMonths(t, 1), endOfMonth(addMonths(t, 1))] },
+        monthToDate: { range: (t) => [addMonths(t, 0), t] },
 
-        thisQuarter: { icon: 'quarter', range: (t) => [startOfQuarter(t), endOfMonth(addMonths(startOfQuarter(t), 2))] },
+        thisQuarter: { range: (t) => [startOfQuarter(t), endOfMonth(addMonths(startOfQuarter(t), 2))] },
         lastQuarter: {
-            icon: 'quarter',
             range: (t) => {
                 const start = addMonths(startOfQuarter(t), -3);
                 return [start, endOfMonth(addMonths(start, 2))]
             }
         },
         nextQuarter: {
-            icon: 'quarter',
             range: (t) => {
                 const start = addMonths(startOfQuarter(t), 3);
                 return [start, endOfMonth(addMonths(start, 2))]
             }
         },
-        quarterToDate: { icon: 'quarter', range: (t) => [startOfQuarter(t), t] },
+        quarterToDate: { range: (t) => [startOfQuarter(t), t] },
 
-        thisYear: { icon: 'year', range: (t) => [new Date(t.getFullYear(), 0, 1), new Date(t.getFullYear(), 11, 31)] },
-        lastYear: { icon: 'year', range: (t) => [new Date(t.getFullYear() - 1, 0, 1), new Date(t.getFullYear() - 1, 11, 31)] },
-        nextYear: { icon: 'year', range: (t) => [new Date(t.getFullYear() + 1, 0, 1), new Date(t.getFullYear() + 1, 11, 31)] },
-        yearToDate: { icon: 'year', range: (t) => [new Date(t.getFullYear(), 0, 1), t] },
-        last12Months: { icon: 'year', range: (t) => [new Date(t.getFullYear() - 1, t.getMonth(), t.getDate() + 1), t] }
+        thisYear: { range: (t) => [new Date(t.getFullYear(), 0, 1), new Date(t.getFullYear(), 11, 31)] },
+        lastYear: { range: (t) => [new Date(t.getFullYear() - 1, 0, 1), new Date(t.getFullYear() - 1, 11, 31)] },
+        nextYear: { range: (t) => [new Date(t.getFullYear() + 1, 0, 1), new Date(t.getFullYear() + 1, 11, 31)] },
+        yearToDate: { range: (t) => [new Date(t.getFullYear(), 0, 1), t] },
+        last12Months: { range: (t) => [new Date(t.getFullYear() - 1, t.getMonth(), t.getDate() + 1), t] }
     };
 
     const LABELS = {
@@ -198,7 +195,6 @@
             }
             list.push({
                 id,
-                icon: def.icon,
                 label: labels[id],
                 getRange: (picker) => def.range(todayFor(options), weekStartsOnMonday(picker, options))
             });
@@ -221,7 +217,6 @@
 
         return {
             id: options.id || `${direction}${count}${safeUnit[0].toUpperCase()}${safeUnit.slice(1)}s`,
-            icon: options.icon || (direction === 'last' ? 'past' : 'future'),
             label,
             getRange: () => {
                 const today = todayFor(options);

@@ -69,8 +69,6 @@ export interface RollDateRangePreset {
   label: string
   /** Stable id, rendered as `data-preset-id` for theming. Defaults to the array index */
   id?: string
-  /** Icon id, rendered as `data-icon`; themes map it to an image */
-  icon?: string
   /** Returns `[start, end]`. Use `picker.getViewMonth()` / `picker.selectedDates` for context. */
   getRange: (picker: RollDate) => [RollDateDateLike, RollDateDateLike] | RollDateDateLike[]
 }
@@ -108,7 +106,7 @@ export interface RollDateOptions {
   rangePresets?: RollDateRangePreset[]
   /** Accessible name for the presets group */
   presetsLabel?: string
-  /** Extra classes on `.RollDate__container`, e.g. a layout theme combined with a color theme */
+  /** Extra classes on `.RollDate__container` */
   containerClass?: string
   closeOnSelect?: boolean
   /** CSS selector for an external open control (popup mode) */

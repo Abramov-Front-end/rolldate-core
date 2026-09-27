@@ -9,8 +9,6 @@ export type RollDatePresetId =
   | 'thisQuarter' | 'lastQuarter' | 'nextQuarter' | 'quarterToDate'
   | 'thisYear' | 'lastYear' | 'nextYear' | 'yearToDate' | 'last12Months'
 
-export type RollDatePresetIcon = 'day' | 'week' | 'weekend' | 'past' | 'future' | 'month' | 'quarter' | 'year'
-
 export interface RollDatePresetsOptions {
   /** Label language; `'en'` and `'uk'` are built in, others fall back to English */
   locale?: string
@@ -26,13 +24,11 @@ export interface RollDateRelativePresetOptions {
   locale?: string
   label?: string
   id?: string
-  icon?: string
   now?: () => Date
 }
 
 export interface RollDateBuiltPreset extends RollDateRangePreset {
   id: string
-  icon: string
 }
 
 export const PRESET_IDS: RollDatePresetId[]

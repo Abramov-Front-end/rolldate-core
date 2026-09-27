@@ -2282,7 +2282,6 @@ var RollDate = (function () {
                 btn.type = 'button';
                 btn.className = 'RollDate__presets__button';
                 btn.dataset.presetId = preset.id || String(index);
-                if (preset.icon) btn.dataset.icon = preset.icon;
                 btn.setAttribute('aria-pressed', 'false');
                 const label = document.createElement('span');
                 label.className = 'RollDate__presets__label';
