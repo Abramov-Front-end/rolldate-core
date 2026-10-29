@@ -45,7 +45,7 @@ export interface RollDateFooterButton {
   /** Accessible name when the visible text is not enough */
   ariaLabel?: string
   /** Built-in action */
-  action?: 'today' | 'clear' | 'close'
+  action?: 'today' | 'clear' | 'close' | 'apply'
   /** Custom click handler; receives the picker instance */
   onClick?: (picker: RollDate) => void
 }
@@ -108,6 +108,11 @@ export interface RollDateOptions {
   presetsLabel?: string
   /** Extra classes on `.RollDate__container` */
   containerClass?: string
+  /**
+   * Close popup after a completed selection.
+   * For `selectType: 'range'` without time: closes after the second day click when true.
+   * When false, keep open until Apply / outside click. Range+time always forces false.
+   */
   closeOnSelect?: boolean
   /** CSS selector for an external open control (popup mode) */
   triggerSelector?: string
@@ -115,6 +120,11 @@ export interface RollDateOptions {
   monthsShortNames?: string[]
   /** Weekday labels, Sunday-first order (rotated when startWeekFromMonday is true) */
   weekDaysNames?: string[]
+  /**
+   * Show scrollable time picker.
+   * With `selectType: 'range'`, each endpoint keeps its own time (shared dial + Start/End focus).
+   * Range+time forces `closeOnSelect: false` (close via Apply / outside click).
+   */
   enableTime?: boolean
   use12Hour?: boolean
   /** Time picker placement on desktop: right (default) or bottom. Always bottom below 640px. */

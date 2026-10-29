@@ -3,7 +3,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "RollDate — scrolling date picker with range/multi select, date availability rules, highlighted dates, time picker, and main/dark/light themes",
   "main": "dist/js/rolldate.min.js",
   "types": "dist/js/rolldate.d.ts",
@@ -64,6 +64,10 @@
   ],
   "author": "Abramov Yevhen <rolldate.support@gmail.com>",
   "license": "MIT",
+  "dependencies": {
+    "@neon/config": "^1.9.2",
+    "@neon/env": "^1.6.3"
+  },
   "scripts": {
     "postinstall": "node scripts/postinstall.mjs"
   }

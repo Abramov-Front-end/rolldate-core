@@ -557,7 +557,7 @@ var RollDate = (function () {
 
         init() {
             const timePanelHtml = this.enableTime
-                ? '<div class="RollDate__time-separator" aria-hidden="true"></div><div class="RollDate__time-panel"><div class="RollDate__time"></div></div>'
+                ? '<div class="RollDate__time-separator" aria-hidden="true"></div><div class="RollDate__time-panel"><div class="RollDate__time-endpoint" hidden></div><div class="RollDate__time"></div></div>'
                 : '';
 
             const footerHtml = this.hasFooter ? `
@@ -1911,6 +1911,13 @@ var RollDate = (function () {
         #focusAfterView = false
         #calendarKeyHandler = null
         #triggerListeners = []
+        /** Which range endpoint the shared time dial edits (`range` + `enableTime` only). */
+        #rangeTimeFocus = 'start'
+        /**
+         * After the first range day click both ends are seeded equal.
+         * The next day click adjusts the end (date-only may then auto-close).
+         */
+        #rangeAwaitingEndClick = false
 
         #clampDateToRange(date, minDate, maxDate) {
             if (!(date instanceof Date) || Number.isNaN(date.getTime())) return minDate
@@ -2173,6 +2180,115 @@ var RollDate = (function () {
             }
         }
 
+        #isRangeTimeMode() {
+            return this.options.selectType === 'range' && Boolean(this.options.enableTime)
+        }
+
+        /** First click: seed start=end (same date/time). Returns whether popup should close. */
+        #seedRangeBothEnds(date) {
+            const start = this.#applyTimeToDate(date);
+            this.#selectedDates = [start, new Date(start.getTime())];
+            this.#rangeAwaitingEndClick = true;
+            if (this.#isRangeTimeMode()) this.#setRangeTimeFocus('start');
+        }
+
+        /**
+         * Range day click model (alternating):
+         * 1) click → seed start=end (same day/time)
+         * 2) click → set end (>= start), or re-seed if earlier
+         * 3) click → new start=end again (so a later day can become start, e.g. 28–29 → click 29 → 29–29)
+         * 4) click → set end…
+         * Date-only may auto-close after step 2 when closeOnSelect is true.
+         * With time, stay open until Apply / outside click.
+         * @returns {boolean} whether the popup should close
+         */
+        #handleRangeDayClick(date) {
+            const clickStamp = this.#toDateStamp(date);
+
+            if (this.#selectedDates.length === 0 || this.#selectedDates.length === 1) {
+                this.#seedRangeBothEnds(date);
+                return false
+            }
+
+            // Completed pair — next click always starts a new range (both ends = clicked day).
+            // This is how a later day becomes the new start (not only earlier days).
+            if (!this.#rangeAwaitingEndClick) {
+                this.#seedRangeBothEnds(date);
+                return false
+            }
+
+            const firstDate = this.#selectedDates[0];
+            const firstStamp = this.#toDateStamp(firstDate);
+
+            // Awaiting end after a seed: earlier day re-seeds; same/later sets end.
+            if (clickStamp < firstStamp) {
+                this.#seedRangeBothEnds(date);
+                return false
+            }
+
+            this.#selectedDates = [firstDate, this.#resolveRangeEndDate(firstDate, date)];
+            this.#rangeAwaitingEndClick = false;
+            if (this.#isRangeTimeMode()) this.#setRangeTimeFocus('end');
+
+            return (
+                this.mode === 'popup' &&
+                this.options.closeOnSelect === true &&
+                !this.options.enableTime
+            )
+        }
+
+        #resolveRangeEndDate(firstDate, clickedDate) {
+            let endDate = this.#applyTimeToDate(clickedDate);
+            if (!this.#isRangeTimeMode()) return endDate
+            if (endDate.getTime() > firstDate.getTime()) return endDate
+            endDate = this.#defaultEndTimeAfter(firstDate);
+            if (this.#toDateStamp(clickedDate) === this.#toDateStamp(firstDate)) return endDate
+            endDate = this.#mergeDayAndClock(clickedDate, endDate.getHours(), endDate.getMinutes());
+            if (endDate.getTime() <= firstDate.getTime()) {
+                return this.#defaultEndTimeAfter(firstDate)
+            }
+            return endDate
+        }
+
+        #rangeTimeIndex() {
+            if (this.#rangeTimeFocus === 'end' && this.#selectedDates.length > 1) return 1
+            return 0
+        }
+
+        #mergeDayAndClock(dayDate, hours, minutes) {
+            return new Date(
+                dayDate.getFullYear(),
+                dayDate.getMonth(),
+                dayDate.getDate(),
+                hours,
+                minutes,
+                0,
+                0
+            )
+        }
+
+        /** Keep calendar day from `dayDate`, clock from `source` (Date / "… HH:mm" / dial). */
+        #preserveIncomingTime(dayDate, source) {
+            const day = dayDate instanceof Date
+                ? new Date(dayDate.getFullYear(), dayDate.getMonth(), dayDate.getDate())
+                : this.#normalizeDateInput(dayDate);
+            if (!day) return null
+            if (!this.options.enableTime) {
+                return new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, 0, 0, 0)
+            }
+            if (source instanceof Date && !Number.isNaN(source.getTime())) {
+                return this.#mergeDayAndClock(day, source.getHours(), source.getMinutes())
+            }
+            if (typeof source === 'string') {
+                const match = source.trim().match(/(\d{1,2}):(\d{2})\s*$/);
+                if (match) {
+                    return this.#mergeDayAndClock(day, Number(match[1]), Number(match[2]))
+                }
+            }
+            return this.#applyTimeToDate(day)
+        }
+
+        /** Stamp the shared time dial onto a calendar day. */
         #applyTimeToDate(date) {
             const d = new Date(date);
             if (!this.options.enableTime) return d
@@ -2182,6 +2298,52 @@ var RollDate = (function () {
             };
             d.setHours(time.hours, time.minutes, 0, 0);
             return d
+        }
+
+        #defaultEndTimeAfter(startDate) {
+            const stepMins = Math.max(Number(this.options.timeStep) || 1, 60);
+            return new Date(startDate.getTime() + stepMins * 60 * 1000)
+        }
+
+        #setRangeTimeFocus(focus, { syncDial = true, paint = true } = {}) {
+            this.#rangeTimeFocus = focus === 'end' ? 'end' : 'start';
+            if (syncDial) this.#syncTimePickerFromFocus();
+            if (paint) this.#paintRangeSelection();
+            this.#updateRangeTimeLabel();
+        }
+
+        #syncTimePickerFromFocus() {
+            if (!this.timePicker || !this.#isRangeTimeMode()) return
+            const idx = this.#rangeTimeIndex();
+            const date = this.#selectedDates[idx] || this.#selectedDates[0];
+            if (!(date instanceof Date) || Number.isNaN(date.getTime())) return
+            this.timePicker.setTime(date.getHours(), date.getMinutes());
+        }
+
+        #updateRangeTimeLabel() {
+            const label = this.dom?.$timeEndpointLabel;
+            if (!label) return
+            if (!this.#isRangeTimeMode()) {
+                label.hidden = true;
+                label.textContent = '';
+                return
+            }
+            label.hidden = false;
+            label.textContent = this.#rangeTimeFocus === 'end' ? 'End' : 'Start';
+        }
+
+        #normalizeRangeTimeBeforeClose() {
+            if (!this.#isRangeTimeMode() || this.#selectedDates.length < 2) return
+            const start = this.#selectedDates[0];
+            let end = this.#selectedDates[1];
+            if (!(start instanceof Date) || !(end instanceof Date)) return
+            if (end.getTime() <= start.getTime()) {
+                end = this.#defaultEndTimeAfter(start);
+                this.#selectedDates[1] = end;
+                this.#updateInputValue();
+                this.#notifySelectionChange();
+                this.#paintRangeSelection();
+            }
         }
 
         #formatDateTime(date) {
@@ -2247,12 +2409,14 @@ var RollDate = (function () {
                 this.clearSelection();
                 return
             }
-            if (cfg.action === 'close') {
+            if (cfg.action === 'apply' || cfg.action === 'close') {
+                this.#normalizeRangeTimeBeforeClose();
                 this.close({ restoreFocus: true });
                 return
             }
             if (typeof cfg.onClick === 'function') {
                 cfg.onClick(this);
+                return
             }
         }
 
@@ -2341,10 +2505,18 @@ var RollDate = (function () {
             if (!range) return
             const [start, end] = range;
 
-            this.#selectedDates = [
-                this.#applyTimeToDate(start),
-                this.#applyTimeToDate(end)
-            ];
+            if (this.#isRangeTimeMode()) {
+                this.#selectedDates = [
+                    this.#preserveIncomingTime(start, start),
+                    this.#preserveIncomingTime(end, end)
+                ];
+                this.#setRangeTimeFocus('start');
+            } else {
+                this.#selectedDates = [
+                    this.#applyTimeToDate(start),
+                    this.#applyTimeToDate(end)
+                ];
+            }
             this.#notifySelectionChange();
             this.#updateInputValue();
             this.#paintRangeSelection();
@@ -2361,9 +2533,15 @@ var RollDate = (function () {
                 scrollSpeed: this.options.scrollSpeed,
                 onChange: () => {
                     if (!this.#selectedDates.length) return
-                    this.#selectedDates = this.#selectedDates.map(date => this.#applyTimeToDate(date));
+                    if (this.#isRangeTimeMode()) {
+                        const idx = Math.min(this.#rangeTimeIndex(), this.#selectedDates.length - 1);
+                        this.#selectedDates[idx] = this.#applyTimeToDate(this.#selectedDates[idx]);
+                    } else {
+                        this.#selectedDates = this.#selectedDates.map(date => this.#applyTimeToDate(date));
+                    }
                     this.#notifySelectionChange();
                     this.#updateInputValue();
+                    if (this.#isRangeTimeMode()) this.#paintRangeSelection();
                 }
             });
         }
@@ -2479,6 +2657,11 @@ var RollDate = (function () {
                 );
             }
 
+            // Range + time: keep popup open while picking endpoints; inputs update live; close via outside click / Apply if provided.
+            if (this.options.selectType === 'range' && this.options.enableTime) {
+                this.options.closeOnSelect = false;
+            }
+
             this.#init();
             RollDate.#instances.add(this);
         }
@@ -2523,6 +2706,9 @@ var RollDate = (function () {
                 const timePosition = this.options.timePosition === 'bottom' ? 'bottom' : 'right';
                 this.$container.classList.add(`RollDate__time-position_${timePosition}`);
             }
+            if (this.#isRangeTimeMode()) {
+                this.$container.classList.add('RollDate__has-range-time');
+            }
             if (this.options.footerButtons?.length) {
                 this.$container.classList.add('RollDate__has-footer');
             }
@@ -2553,6 +2739,7 @@ var RollDate = (function () {
                 $page_switcher: this.$container.querySelectorAll('.RollDate__calendar__button'),
                 $footer_buttons: this.$container.querySelector('.RollDate__footer__buttons'),
                 $time: this.$container.querySelector('.RollDate__time'),
+                $timeEndpointLabel: this.$container.querySelector('.RollDate__time-endpoint'),
             };
 
             this.#initFooterButtons();
@@ -2560,6 +2747,7 @@ var RollDate = (function () {
             if (this.options.enableTime && this.dom.$time) {
                 this.#initTimePicker();
             }
+            this.#updateRangeTimeLabel();
 
             this.virtualizer = new Virtualizer(this);
 
@@ -2896,56 +3084,16 @@ var RollDate = (function () {
                     }
 
                     if (this.options.selectType === 'range') {
-                        const clickStamp = this.#toDateStamp(date);
-                        const isClickInRange = this.#selectedDates.length === 2 &&
-                            clickStamp >= this.#toDateStamp(this.#selectedDates[0]) &&
-                            clickStamp <= this.#toDateStamp(this.#selectedDates[1]);
-
-                        if (this.#selectedDates.length === 2 && !isClickInRange) {
-                            this.#clearRangeSelection();
-                        }
-
-                        if (this.#selectedDates.length === 0) {
-                            this.#selectedDates = [date];
-                            $day.classList.add('RollDate__calendar__day--range-first');
-                        } else {
-                            const firstDate = this.#selectedDates[0];
-                            const firstStamp = this.#toDateStamp(firstDate);
-                            if (clickStamp > firstStamp) {
-                                this.#selectedDates = [firstDate, date];
-
-                                this.$container.querySelectorAll('[data-day]').forEach(dayEl => {
-                                    const dayDate = new Date(
-                                        Number(dayEl.dataset.year),
-                                        Number(dayEl.dataset.month),
-                                        Number(dayEl.dataset.day)
-                                    );
-                                    const stamp = this.#toDateStamp(dayDate);
-
-                                    if (stamp === firstStamp) {
-                                        dayEl.classList.add('RollDate__calendar__day--range-first');
-                                    } else if (stamp === clickStamp) {
-                                        dayEl.classList.add('RollDate__calendar__day--range-last');
-                                    } else if (stamp > firstStamp && stamp < clickStamp) {
-                                        dayEl.classList.add('RollDate__calendar__day--range-selected');
-                                    }
-                                });
-                            } else if (clickStamp < firstStamp) {
-                                this.#selectedDates = [date];
-                                $day.classList.add('RollDate__calendar__day--range-first');
-
-                                this.$container.querySelector('.RollDate__calendar__day--range-first:not([data-day="' + date.getDate() + '"])')
-                                    ?.classList.remove('RollDate__calendar__day--range-first');
-                            }
-                        }
+                        const shouldClose = this.#handleRangeDayClick(date);
 
                         this.#syncPresetState();
                         this.options.selectDate([...this.#selectedDates]);
                         this.#updateInputValue();
                         this.#activeDateStamp = this.#toDateStamp(date);
                         this.#syncDayTabindex({ focus: false });
+                        this.#paintRangeSelection();
 
-                        if (this.mode === 'popup' && this.#selectedDates.length === 2 && this.options.closeOnSelect) {
+                        if (shouldClose) {
                             this.close({ restoreFocus: true });
                         }
                     }
@@ -3562,21 +3710,40 @@ var RollDate = (function () {
                 this.#selectedDates = [this.#applyTimeToDate(normalized)];
             } else if (this.options.selectType === 'range') {
                 const raw = Array.isArray(value) ? value : [value];
-                const parsed = raw
-                    .map(item => this.#normalizeDateInput(item))
-                    .filter(Boolean)
-                    .map(date => this.#clampDateToRange(date, this.options.minDate, this.options.maxDate))
-                    .filter(date => !this.#isDateDisabled(date));
+                const entries = raw.map((item) => {
+                    const day = this.#normalizeDateInput(item);
+                    if (!day) return null
+                    const clamped = this.#clampDateToRange(day, this.options.minDate, this.options.maxDate);
+                    if (this.#isDateDisabled(clamped)) return null
+                    return {
+                        day: clamped,
+                        source: item
+                    }
+                }).filter(Boolean);
 
-                if (!parsed.length) return false
+                if (!entries.length) return false
 
-                let start = parsed[0];
-                let end = parsed.length > 1 ? parsed[1] : parsed[0];
-                if (start > end) [start, end] = [end, start];
+                let startEntry = entries[0];
+                let endEntry = entries.length > 1 ? entries[1] : entries[0];
+                if (this.#toDateStamp(startEntry.day) > this.#toDateStamp(endEntry.day)) {
+                    [startEntry, endEntry] = [endEntry, startEntry];
+                }
 
-                this.#selectedDates = parsed.length > 1
-                    ? [this.#applyTimeToDate(start), this.#applyTimeToDate(end)]
-                    : [this.#applyTimeToDate(start)];
+                if (this.#isRangeTimeMode()) {
+                    const start = this.#preserveIncomingTime(startEntry.day, startEntry.source);
+                    const end = entries.length > 1
+                        ? this.#preserveIncomingTime(endEntry.day, endEntry.source)
+                        : start;
+                    this.#selectedDates = entries.length > 1 ? [start, end] : [start];
+                    this.#rangeTimeFocus = 'start';
+                    this.#syncTimePickerFromFocus();
+                } else {
+                    this.#selectedDates = entries.length > 1
+                        ? [this.#applyTimeToDate(startEntry.day), this.#applyTimeToDate(endEntry.day)]
+                        : [this.#applyTimeToDate(startEntry.day)];
+                }
+                // Programmatic value is complete — next click adjusts end (or restarts if earlier).
+                this.#rangeAwaitingEndClick = false;
             } else {
                 const raw = Array.isArray(value) ? value : [value];
                 const parsed = raw
@@ -3625,27 +3792,40 @@ var RollDate = (function () {
                 dayEl.classList.remove(
                     'RollDate__calendar__day--range-first',
                     'RollDate__calendar__day--range-last',
-                    'RollDate__calendar__day--range-selected'
+                    'RollDate__calendar__day--range-selected',
+                    'RollDate__calendar__day--range-time-active',
+                    'RollDate__calendar__day--range-same-day'
                 );
             });
             this.#syncPresetState();
+            this.#updateRangeTimeLabel();
 
             if (!this.#selectedDates.length) return
 
             const firstStamp = this.#toDateStamp(this.#selectedDates[0]);
 
             if (this.#selectedDates.length === 1) {
-                this.#findDayElement(this.#selectedDates[0])
-                    ?.classList.add('RollDate__calendar__day--range-first');
+                const el = this.#findDayElement(this.#selectedDates[0]);
+                el?.classList.add('RollDate__calendar__day--range-first');
+                if (this.#isRangeTimeMode() && this.#rangeTimeFocus === 'start') {
+                    el?.classList.add('RollDate__calendar__day--range-time-active');
+                }
                 return
             }
 
             const endStamp = this.#toDateStamp(this.#selectedDates[1]);
+            const sameDay = firstStamp === endStamp;
 
             this.$container.querySelectorAll('[data-day]').forEach(dayEl => {
                 const stamp = this.#dayElementStamp(dayEl);
 
-                if (stamp === firstStamp) {
+                if (sameDay && stamp === firstStamp) {
+                    dayEl.classList.add(
+                        'RollDate__calendar__day--range-first',
+                        'RollDate__calendar__day--range-last',
+                        'RollDate__calendar__day--range-same-day'
+                    );
+                } else if (stamp === firstStamp) {
                     dayEl.classList.add('RollDate__calendar__day--range-first');
                 } else if (stamp === endStamp) {
                     dayEl.classList.add('RollDate__calendar__day--range-last');
@@ -3653,6 +3833,12 @@ var RollDate = (function () {
                     dayEl.classList.add('RollDate__calendar__day--range-selected');
                 }
             });
+
+            if (this.#isRangeTimeMode()) {
+                const activeDate = this.#selectedDates[this.#rangeTimeIndex()] || this.#selectedDates[0];
+                this.#findDayElement(activeDate)
+                    ?.classList.add('RollDate__calendar__day--range-time-active');
+            }
         }
 
         #paintSingleSelection() {
@@ -3691,11 +3877,14 @@ var RollDate = (function () {
 
         #clearRangeSelection() {
             this.#selectedDates = [];
+            this.#rangeAwaitingEndClick = false;
             this.$container.querySelectorAll('[data-day]').forEach(item => {
                 item.classList.remove(
                     'RollDate__calendar__day--range-first',
                     'RollDate__calendar__day--range-last',
-                    'RollDate__calendar__day--range-selected'
+                    'RollDate__calendar__day--range-selected',
+                    'RollDate__calendar__day--range-time-active',
+                    'RollDate__calendar__day--range-same-day'
                 );
             });
         }
@@ -3808,6 +3997,14 @@ var RollDate = (function () {
                 this.#focusReturnEl = this.$startInput || this.$trigger;
             }
 
+            if (this.#isRangeTimeMode()) {
+                if (this.$endInput && this.#focusReturnEl === this.$endInput && this.#selectedDates.length > 1) {
+                    this.#setRangeTimeFocus('end', { paint: false });
+                } else {
+                    this.#setRangeTimeFocus('start', { paint: false });
+                }
+            }
+
             if (this.mode === 'popup') {
                 this.#closeOtherPopups();
             }
@@ -3822,15 +4019,20 @@ var RollDate = (function () {
                 if (this.#firstOpen) {
                     this.#scrollToStartDate();
                     this.#firstOpen = false;
-                    requestAnimationFrame(() => this.#syncDayTabindex({ focus: true }));
+                    requestAnimationFrame(() => {
+                        this.#syncDayTabindex({ focus: true });
+                        if (this.#isRangeTimeMode()) this.#paintRangeSelection();
+                    });
                 } else {
                     this.#focusAfterView = true;
                     this.#updateView(this.#viewNumber);
+                    if (this.#isRangeTimeMode()) this.#paintRangeSelection();
                 }
             } else {
                 if (!this.dom?.$body) {
                     this.#updateView(this.#viewNumber);
                 }
+                if (this.#isRangeTimeMode()) this.#paintRangeSelection();
             }
 
             if (!wasOpen) {
@@ -3842,6 +4044,7 @@ var RollDate = (function () {
         }
 
         close(opts = {}) {
+            this.#normalizeRangeTimeBeforeClose();
             const wasOpen = this.$container.style.display !== 'none';
             this.$container.style.display = 'none';
             if (this.mode === 'popup') {
@@ -3891,7 +4094,22 @@ var RollDate = (function () {
             if (this.options.selectType === 'single') {
                 this.#selectedDates = [selected];
             } else if (this.options.selectType === 'range') {
-                this.#selectedDates = [selected];
+                if (this.#isRangeTimeMode() && this.#selectedDates.length > 0) {
+                    const idx = Math.min(this.#rangeTimeIndex(), this.#selectedDates.length - 1);
+                    this.#selectedDates[idx] = selected;
+                    // Keep chronological order of day stamps when both ends exist.
+                    if (this.#selectedDates.length === 2) {
+                        const a = this.#selectedDates[0];
+                        const b = this.#selectedDates[1];
+                        if (this.#toDateStamp(a) > this.#toDateStamp(b)) {
+                            this.#selectedDates = [b, a];
+                            this.#rangeTimeFocus = this.#rangeTimeFocus === 'end' ? 'start' : 'end';
+                        }
+                    }
+                } else {
+                    this.#selectedDates = [selected];
+                    if (this.#isRangeTimeMode()) this.#rangeTimeFocus = 'start';
+                }
             } else if (this.options.selectType === 'multi') {
                 const selectedStamp = this.#toDateStamp(selected);
                 const exists = this.#selectedDates.some(d => this.#toDateStamp(d) === selectedStamp);
@@ -3901,6 +4119,7 @@ var RollDate = (function () {
             this.#updateView(this.#viewNumber);
             this.#notifySelectionChange();
             this.#updateInputValue();
+            if (this.#isRangeTimeMode()) this.#paintRangeSelection();
 
             if (this.mode === 'popup' && this.options.closeOnSelect && this.options.selectType === 'single') {
                 this.close({ restoreFocus: true });
@@ -3916,6 +4135,11 @@ var RollDate = (function () {
                 this.#selectedDates = [];
                 this.$container.querySelectorAll('[data-day].RollDate__calendar__day--selected')
                     .forEach(el => el.classList.remove('RollDate__calendar__day--selected'));
+            }
+
+            if (this.#isRangeTimeMode()) {
+                this.#rangeTimeFocus = 'start';
+                this.#updateRangeTimeLabel();
             }
 
             this.#notifySelectionChange();

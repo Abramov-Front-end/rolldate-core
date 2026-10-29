@@ -2,6 +2,13 @@
 
 All notable changes to `@rolldate/core` are documented here.
 
+## [1.4.1] — 2026-10-29
+
+### Fixed
+
+- **Range selection** — first click seeds start=end; second sets the end; a later third click re-seeds so a later day can become the new start
+- **Range + time** — Start/End keep independent clocks; optional Apply; live input updates while picking
+
 ## [1.4.0] — 2026-09-27
 
 ### Added
