@@ -3060,6 +3060,10 @@ var RollDate = (function () {
                 }
 
                 if ($day) {
+                    if (this.mode === 'popup' &&
+                        (this.$trigger?.matches(':disabled') || this.#focusReturnEl?.matches(':disabled'))) {
+                        return
+                    }
                     if ($day.classList.contains('RollDate__calendar__day--disabled')) {
                         return
                     }
